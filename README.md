@@ -6,4 +6,6 @@ Please install RedPen initially.
 
 M-x list-packages, install `redpen-paragraph'.
 Set `redpen-commands' & key binding.
-Read 'Usage:' comment.
+Read 'Usage:' comment for setting.
+
+convenient redpen wrapper: https://gist.github.com/karronoli/0ffd4236fc0413c7593c
