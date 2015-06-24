@@ -7,7 +7,7 @@
 ;; Version: 0.1
 ;; Keywords: document, proofreading, help
 ;; X-URL: https://github.com/karronoli/redpen-paragraph.el
-;; Package-Requires:
+;; Package-Requires: ((emacs "24") (cl-lib "0.5"))
 
 ;; Licensed under the Apache License, Version 2.0 (the "License");
 ;; you may not use this file except in compliance with the License.
@@ -87,6 +87,8 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+
 (defgroup redpen-paragraph nil
   "RedPen interface for proofreading paragraph."
   :group 'redpen-paragraph)
@@ -100,7 +102,6 @@
    (format "redpen.%s" (emacs-pid)) temporary-file-directory)
   "Filename passed to rendpen.")
 
-(autoload 'cl-loop "cl-lib" "for loop")
 (autoload 'org-backward-paragraph "org")
 (autoload 'org-forward-paragraph "org")
 (defvar redpen-paragraph-alist
@@ -139,17 +140,19 @@ if FLAG is not nil, use second command in `redpen-commands'."
     (with-temp-file redpen-temporary-filename (insert str))
     (compilation-start (format command redpen-temporary-filename))))
 
-(with-eval-after-load "compile"
-  (defvar compilation-error-regexp-alist)
-  (add-to-list 'compilation-error-regexp-alist 'redpen-plain)
-  (defvar compilation-error-regexp-alist-alist)
-  (add-to-list
-   'compilation-error-regexp-alist-alist
-   ;; eg1. redpen.15364:1: ValidationError[SpaceBetweenAlphabeticalWord],
-   ;; eg2. 1: ValidationError[SpaceBetweenAlphabeticalWord],
-   '(redpen-plain
-     . ("^\\(?:\\([^:]+\\):\\)?\\([[:digit:]]+\\): \\([^,]+\\)"
-        #'redpen-temporary-filename 2 nil (3)))))
+(eval-after-load "compile"
+  '(progn
+    (defvar compilation-error-regexp-alist)
+
+    (add-to-list 'compilation-error-regexp-alist 'redpen-plain)
+    (defvar compilation-error-regexp-alist-alist)
+    (add-to-list
+     'compilation-error-regexp-alist-alist
+     ;; eg1. redpen.15364:1: ValidationError[SpaceBetweenAlphabeticalWord],
+     ;; eg2. 1: ValidationError[SpaceBetweenAlphabeticalWord],
+     '(redpen-plain
+       . ("^\\(?:\\([^:]+\\):\\)?\\([[:digit:]]+\\): \\([^,]+\\)"
+          #'redpen-temporary-filename 2 nil (3))))))
 (defun redpen-temporary-filename ()
   "Return `redpen-temporary-filename'." redpen-temporary-filename)
 
