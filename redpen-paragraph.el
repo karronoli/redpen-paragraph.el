@@ -87,6 +87,8 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+
 (defgroup redpen-paragraph nil
   "RedPen interface for proofreading paragraph."
   :group 'redpen-paragraph)
@@ -100,7 +102,6 @@
    (format "redpen.%s" (emacs-pid)) temporary-file-directory)
   "Filename passed to rendpen.")
 
-(autoload 'cl-loop "cl-lib" "for loop")
 (autoload 'org-backward-paragraph "org")
 (autoload 'org-forward-paragraph "org")
 (defvar redpen-paragraph-alist
