@@ -7,7 +7,7 @@
 ;; Version: 0.1
 ;; Keywords: document, proofreading, help
 ;; X-URL: https://github.com/karronoli/redpen-paragraph.el
-;; Package-Requires:
+;; Package-Requires: ((emacs "24") (cl-lib "0.5"))
 
 ;; Licensed under the Apache License, Version 2.0 (the "License");
 ;; you may not use this file except in compliance with the License.
