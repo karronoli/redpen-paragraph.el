@@ -139,17 +139,19 @@ if FLAG is not nil, use second command in `redpen-commands'."
     (with-temp-file redpen-temporary-filename (insert str))
     (compilation-start (format command redpen-temporary-filename))))
 
-(with-eval-after-load "compile"
-  (defvar compilation-error-regexp-alist)
-  (add-to-list 'compilation-error-regexp-alist 'redpen-plain)
-  (defvar compilation-error-regexp-alist-alist)
-  (add-to-list
-   'compilation-error-regexp-alist-alist
-   ;; eg1. redpen.15364:1: ValidationError[SpaceBetweenAlphabeticalWord],
-   ;; eg2. 1: ValidationError[SpaceBetweenAlphabeticalWord],
-   '(redpen-plain
-     . ("^\\(?:\\([^:]+\\):\\)?\\([[:digit:]]+\\): \\([^,]+\\)"
-        #'redpen-temporary-filename 2 nil (3)))))
+(eval-after-load "compile"
+  '(progn
+    (defvar compilation-error-regexp-alist)
+
+    (add-to-list 'compilation-error-regexp-alist 'redpen-plain)
+    (defvar compilation-error-regexp-alist-alist)
+    (add-to-list
+     'compilation-error-regexp-alist-alist
+     ;; eg1. redpen.15364:1: ValidationError[SpaceBetweenAlphabeticalWord],
+     ;; eg2. 1: ValidationError[SpaceBetweenAlphabeticalWord],
+     '(redpen-plain
+       . ("^\\(?:\\([^:]+\\):\\)?\\([[:digit:]]+\\): \\([^,]+\\)"
+          #'redpen-temporary-filename 2 nil (3))))))
 (defun redpen-temporary-filename ()
   "Return `redpen-temporary-filename'." redpen-temporary-filename)
 
