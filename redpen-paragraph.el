@@ -4,7 +4,7 @@
 
 ;; Author:  karronoli
 ;; Created: 2015/06/23
-;; Version: 0.1
+;; Version: 0.21
 ;; Keywords: document, proofreading, help
 ;; X-URL: https://github.com/karronoli/redpen-paragraph.el
 ;; Package-Requires: ((emacs "24") (cl-lib "0.5"))
