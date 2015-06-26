@@ -152,7 +152,8 @@ if FLAG is not nil, use second command in `redpen-commands'."
      ;; eg2. 1: ValidationError[SpaceBetweenAlphabeticalWord],
      '(redpen-plain
        "^\\([^:\n]*\\):?\\([0-9]\\)+: \\(ValidationError[^,]+\\)"
-       redpen-temporary-filename 2))))
+       redpen-temporary-filename 2 nil nil nil
+       (1 compilation-error-face)))))
 (defun redpen-temporary-filename ()
   "Return `redpen-temporary-filename'." redpen-temporary-filename)
 
