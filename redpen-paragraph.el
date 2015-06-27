@@ -32,13 +32,14 @@
 
 ;;; Usage:
 ;;
-;; You need install redpen!
+;; You should install redpen!
 ;;   http://redpen.cc/
 ;;
 ;; Install from package.el & put these lines in your init file.
-;; '%s' is replaced by `redpen-temporary-filename'.
+;; `redpen-commands' is for demo by default.
 ;;   (defvar redpen-commands
 ;;       ;; main command
+;;       ;; '%s' is replaced by `redpen-temporary-filename'.
 ;;     '("redpen -c /path/to/redpen-conf-ja.xml %s 2>/dev/null"
 ;;       ;; alternate command
 ;;       "redpen -c /path/to/redpen-conf-en.xml %s 2>/dev/null"))
@@ -93,7 +94,16 @@
   "RedPen interface for proofreading paragraph."
   :group 'redpen-paragraph)
 
-(defvar redpen-commands '("redpen_ja %s" "redpen_en %s")
+(defvar redpen-commands
+  ;; This setting is demo use only.
+  `(,(concat
+      "curl -s --data-urlencode document@%s"
+      " --data lang=en --data format=plain"
+      " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")
+    ,(concat
+      "curl -s --data-urlencode document@%s"
+      " --data lang=ja --data format=plain"
+      " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/"))
   "Define redpen executable or equivalent commands.")
 (defvar redpen-encoding 'utf-8
   "Encoding for redpen I/O.")
