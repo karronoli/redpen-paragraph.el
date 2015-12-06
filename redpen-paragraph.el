@@ -37,6 +37,8 @@
 ;;
 ;; Install from package.el & put these lines in your init file.
 ;; `redpen-commands' is for demo by default.
+;; '%s' is replaced by `redpen-temporary-filename'.
+;; With C-u, replaced by `buffer-file-name'.
 ;;   (defvar redpen-commands
 ;;       ;; main command
 ;;       ;; '%s' is replaced by `redpen-temporary-filename'.
@@ -146,11 +148,12 @@ if FLAG is not nil, use second command in `redpen-commands'."
   (interactive "P")
   (let* ((coding-system-for-write redpen-encoding) ; for writing file
          (coding-system-for-read redpen-encoding) ; for reading stdout
+         (is-whole (not (null flag))) ;; for C-u flag
          (handler (cdr (assq major-mode redpen-paragraph-alist)))
          (default-handler
            (lambda ()
-             (unless (region-active-p) (mark-paragraph))
-             (buffer-substring (region-beginning) (region-end))))
+             (unless (use-region-p) (mark-paragraph))
+             (buffer-substring-no-properties (region-beginning) (region-end))))
          (str (save-excursion
                 (funcall (or handler default-handler))))
          (is-english (or redpen-paragraph-force-english
@@ -158,7 +161,9 @@ if FLAG is not nil, use second command in `redpen-commands'."
          (command (if is-english
                       (nth 0 redpen-commands) (nth 1 redpen-commands))))
     (with-temp-file redpen-temporary-filename (insert str))
-    (compilation-start (format command redpen-temporary-filename))))
+    (compilation-start
+     (format command
+             (if is-whole buffer-file-name redpen-temporary-filename)))))
 
 (eval-after-load "compile"
   '(progn
