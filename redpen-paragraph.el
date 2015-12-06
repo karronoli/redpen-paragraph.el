@@ -75,18 +75,25 @@
 ;;   (popwin-mode 1)
 ;;   (push '(compilation-mode :noselect t) popwin:special-display-config)
 ;;
-;; - `flycheck-mode' (eg. for org-mode)
-;;   (require 'flycheck)
-;;   (flycheck-define-checker redpen_ja
-;;     "redpen for flycheck"
-;;     :command ("redpen_local" source)
-;;     :error-patterns
-;;     ((error line-start
-;;             (file-name) ":"
-;;             line ": " (message) line-end))
-;;     :modes (org-mode))
-;;   (flycheck-select-checker 'redpen_ja)
-
+;; - `flycheck-mode' (eg. for markdown-mode)
+;; (require 'flycheck)
+;; (flycheck-define-checker redpen-markdown
+;;   "redpen for markdown by flycheck"
+;;   :command ("curl" "-s" "--data-urlencode" "document@-"
+;;             "--data" "format=plain" "--data" "documentParser=MARKDOWN"
+;;             "--data" "lang=en"  ;; for english
+;;             ; " --data-urlencode config@/path/to/redpen-conf-en.xml"
+;;             "http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/"
+;;             source)
+;;   :standard-input t
+;;   :error-patterns
+;;   ((error line-start
+;;           line ": ValidationError" (message) line-end))
+;;   :modes (markdown-mode))
+;; (add-hook 'markdown-mode-hook
+;;           (lambda ()
+;;             (flycheck-mode t)
+;;             (flycheck-select-checker 'redpen-markdown)))
 
 ;;; Code:
 
