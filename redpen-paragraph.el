@@ -40,12 +40,10 @@
 ;; '%s' is replaced by `redpen-temporary-filename'.
 ;; With C-u, replaced by `buffer-file-name'.
 ;;   (defvar redpen-commands
-;;       ;; main command
-;;       ;; '%s' is replaced by `redpen-temporary-filename'.
-;;     '("redpen -c /path/to/redpen-conf-ja.xml %s 2>/dev/null"
-;;       ;; alternate command
-;;       "redpen -c /path/to/redpen-conf-en.xml %s 2>/dev/null"))
-;;   ;; C-c C-r for main command, C-u C-c C-r for alternate.
+;;       ;; for english command
+;;     '("redpen -c /path/to/redpen-conf-en.xml %s 2>/dev/null"
+;;       ;; for not english command
+;;       "redpen -c /path/to/redpen-conf-ja.xml %s 2>/dev/null"))
 ;;   (define-key global-map (kbd "C-c C-r") 'redpen-paragraph)
 ;;
 ;; If running redpen-server at http://localhost:8080,
@@ -107,18 +105,24 @@
   ;; This setting is demo use only.
   `(,(concat
       "curl -s --data-urlencode document@%s"
-      " --data lang=en --data format=plain"
+      " --data documentParser=PLAIN --data format=plain"
+      " --data lang=en" ;; for english
+      ; " --data-urlencode config@/path/to/redpen-conf-en.xml"
       " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")
     ,(concat
       "curl -s --data-urlencode document@%s"
-      " --data lang=ja --data format=plain"
+      " --data documentParser=PLAIN --data format=plain"
+      " --data lang=ja" ;; for not english
+      ; " --data-urlencode config@/path/to/redpen-conf-ja.xml"
       " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/"))
-  "Define redpen executable or equivalent commands.")
+  "Define redpen commands. 1st is for english, 2nd is for other language.")
+
 (defvar redpen-paragraph-force-english nil
   "Force English without detecting.")
 
 (defvar redpen-encoding 'utf-8
   "Encoding for redpen I/O.")
+
 (defvar redpen-temporary-filename
   (expand-file-name
    (format "redpen.%s" (emacs-pid)) temporary-file-directory)
@@ -177,7 +181,6 @@ if FLAG is not nil, use second command in `redpen-commands'."
 (eval-after-load "compile"
   '(progn
     (defvar compilation-error-regexp-alist)
-
     (add-to-list 'compilation-error-regexp-alist 'redpen-plain)
     (defvar compilation-error-regexp-alist-alist)
     (add-to-list
@@ -188,6 +191,7 @@ if FLAG is not nil, use second command in `redpen-commands'."
        "^\\([^:\n]*\\)?\\(?::\\)?\\([0-9]+\\): ValidationError"
        redpen-temporary-filename 2 nil nil nil
        (1 compilation-error-face)))))
+
 (defun redpen-temporary-filename ()
   "Return `redpen-temporary-filename'." redpen-temporary-filename)
 
