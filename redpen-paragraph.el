@@ -105,6 +105,9 @@
       " --data lang=ja --data format=plain"
       " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/"))
   "Define redpen executable or equivalent commands.")
+(defvar redpen-paragraph-force-english nil
+  "Force English without detecting.")
+
 (defvar redpen-encoding 'utf-8
   "Encoding for redpen I/O.")
 (defvar redpen-temporary-filename
@@ -127,6 +130,14 @@
                     collect (char-after pos)))))))
   "Define how to get paragraph on specific major mode.")
 
+(defun redpen-paragraph-is-english (text)
+  "Detect language by TEXT."
+  (let* ((full (length text))
+         (not-english
+          (length (replace-regexp-in-string "[\x21-\x7e]" "" text)))
+         (english (- full not-english)))
+    (> english not-english)))
+
 ;;;###autoload
 (defun redpen-paragraph (&optional flag)
   "Profread some paragraphs by redpen.
@@ -135,8 +146,6 @@ if FLAG is not nil, use second command in `redpen-commands'."
   (interactive "P")
   (let* ((coding-system-for-write redpen-encoding) ; for writing file
          (coding-system-for-read redpen-encoding) ; for reading stdout
-         (command (if (null flag) ;; for C-u flag
-                      (nth 0 redpen-commands) (nth 1 redpen-commands)))
          (handler (cdr (assq major-mode redpen-paragraph-alist)))
          (default-handler
            (lambda ()
@@ -147,6 +156,10 @@ if FLAG is not nil, use second command in `redpen-commands'."
                  (if (or (not handler) (region-active-p))
                      default-handler
                    handler)))))
+         (is-english (or redpen-paragraph-force-english
+                      (redpen-paragraph-is-english str)))
+         (command (if is-english
+                      (nth 0 redpen-commands) (nth 1 redpen-commands))))
     (with-temp-file redpen-temporary-filename (insert str))
     (compilation-start (format command redpen-temporary-filename))))
 
