@@ -26,8 +26,8 @@
 ;; This package proofread paragraph by redpen,
 ;; parse RedPen plain Output Format.
 ;; Priority for how to get paragraph:
-;; 1. active region
-;; 2. by customization on specific major mode
+;; 1. by customization on specific major mode
+;; 2. active region
 ;; 3. (mark-paragraph)
 
 ;;; Usage:
@@ -152,10 +152,7 @@ if FLAG is not nil, use second command in `redpen-commands'."
              (unless (region-active-p) (mark-paragraph))
              (buffer-substring (region-beginning) (region-end))))
          (str (save-excursion
-                (funcall
-                 (if (or (not handler) (region-active-p))
-                     default-handler
-                   handler)))))
+                (funcall (or handler default-handler))))
          (is-english (or redpen-paragraph-force-english
                       (redpen-paragraph-is-english str)))
          (command (if is-english
