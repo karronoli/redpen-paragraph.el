@@ -123,8 +123,10 @@
   (list
    `(org-mode
      . ,(lambda () "get visible string on current paragraph."
-          (let ((end (progn (org-forward-paragraph) (1- (point))))
-                (begin (progn (org-backward-paragraph) (point))))
+          (let ((end (if (use-region-p) (1- (region-end))
+                       (org-forward-paragraph) (1- (point))))
+                (begin (if (use-region-p) (region-beginning)
+                         (org-backward-paragraph) (point))))
             (apply 'string
                    (cl-loop
                     for pos from begin to end
