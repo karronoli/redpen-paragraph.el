@@ -120,6 +120,9 @@
 (defvar redpen-paragraph-force-english nil
   "Force English without detecting.")
 
+(defvar redpen-paragraph-force-reading-whole nil
+  "Force reading the whole file.")
+
 (defvar redpen-encoding 'utf-8
   "Encoding for redpen I/O.")
 
@@ -161,7 +164,8 @@ if FLAG is not nil, use second command in `redpen-commands'."
   (interactive "P")
   (let* ((coding-system-for-write redpen-encoding) ; for writing file
          (coding-system-for-read redpen-encoding) ; for reading stdout
-         (is-whole (not (null flag))) ;; for C-u flag
+         (is-whole (or redpen-paragraph-force-reading-whole
+                       (not (null flag)))) ;; for C-u flag
          (handler (cdr (assq major-mode redpen-paragraph-alist)))
          (default-handler
            (lambda ()
