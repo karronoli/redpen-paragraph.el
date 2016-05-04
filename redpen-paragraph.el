@@ -45,13 +45,10 @@
 ;;       ;; for not english command
 ;;       "redpen -c /path/to/redpen-conf-ja.xml %s 2>/dev/null"))
 ;;   (define-key global-map (kbd "C-c C-r") 'redpen-paragraph)
-;;
-;; If running redpen-server at http://localhost:8080,
-;; eg, set http client to `redpen-commands'.
-;;   (setcar redpen-commands (concat
-;;     "curl -s --data-urlencode document@%s"
-;;     " --data lang=ja --data format=plain"
-;;     " http://localhost:8080/rest/document/validate/"))
+;;   (add-hook 'kill-emacs-hook
+;;             (lambda ()
+;;               (if (file-exists-p redpen-temporary-filename)
+;;                   (delete-file redpen-temporary-filename))))
 ;;
 ;; You can add how to get paragraph by `redpen-paragraph-alist'.
 ;; `org-mode' setting is enabled by default.
@@ -68,7 +65,7 @@
 ;;     | grep -v '^$' | grep -F -v '[INFO ]' \
 ;;     && exit 1 || exit 0
 ;;
-;; - `popwin-mode' for closing compilation buffer
+;; - `popwin-mode' for closing buffer. (but often not work...)
 ;;   (require 'popwin)
 ;;   (popwin-mode 1)
 ;;   (push '(compilation-mode :noselect t) popwin:special-display-config)
@@ -92,6 +89,13 @@
 ;;           (lambda ()
 ;;             (flycheck-mode t)
 ;;             (flycheck-select-checker 'redpen-markdown)))
+;;
+;; - save hook
+;; (add-hook 'after-save-hook
+;;           (lambda ()
+;;             (if (eq major-mode 'org-mode)
+;;                 (let ((redpen-paragraph-force-reading-whole t))
+;;                   (redpen-paragraph)))))
 
 ;;; Code:
 
@@ -107,13 +111,13 @@
       "curl -s --data-urlencode document@%s"
       " --data documentParser=PLAIN --data format=plain"
       " --data lang=en" ;; for english
-      ; " --data-urlencode config@/path/to/redpen-conf-en.xml"
+      ;; " --data-urlencode config@/path/to/redpen-conf-en.xml"
       " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")
     ,(concat
       "curl -s --data-urlencode document@%s"
       " --data documentParser=PLAIN --data format=plain"
       " --data lang=ja" ;; for not english
-      ; " --data-urlencode config@/path/to/redpen-conf-ja.xml"
+      ;; " --data-urlencode config@/path/to/redpen-conf-ja.xml"
       " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/"))
   "Define redpen commands. 1st is for english, 2nd is for other language.")
 
