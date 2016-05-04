@@ -137,6 +137,9 @@
    (format "redpen.%s" (emacs-pid)) temporary-file-directory)
   "Filename passed to rendpen.")
 
+(defvar redpen-target-filename ""
+  "Editing filename.")
+
 (defvar redpen-paragraph-compilation-buffer-name
   "*compilation*" "Compilation buffer name.")
 
@@ -147,6 +150,16 @@
 (defvar redpen-paragraph-input-pattern
   "%d:%d:%d:%d: ValidationError[%s], %s at line: %s\n"
   "Adjust to suit the input regexp.")
+(defvar redpen-paragraph-input-regexp
+  "^\\([0-9]+\\):\\([0-9]+\\):\\([0-9]+\\):\\([0-9]+\\): ValidationError"
+  "Adjust to suit the input pattern.
+
+regexp capture & bind list
+1st: lineNum | startPosition.lineNum
+2nd: lineNum | endPosition.lineNum
+3rd: 1 | startPosition.offset
+4th: 1 | endPosition.offset")
+
 (autoload 'org-backward-paragraph "org")
 (autoload 'org-forward-paragraph "org")
 (defvar redpen-paragraph-alist
@@ -178,6 +191,7 @@
 
 if FLAG is not nil, use second command in `redpen-commands'."
   (interactive "P")
+  (setq redpen-target-filename buffer-file-name)
   (let* ((coding-system-for-write redpen-encoding) ; for writing file
          (coding-system-for-read redpen-encoding) ; for reading stdout
          (is-whole (or redpen-paragraph-force-reading-whole
@@ -261,18 +275,17 @@ if FLAG is not nil, use second command in `redpen-commands'."
 
 (eval-after-load "compile"
   '(progn
-    (add-to-list 'compilation-error-regexp-alist 'redpen-plain)
-    (add-to-list
-     'compilation-error-regexp-alist-alist
-     ;; eg1. redpen.15364:10: ValidationError[SpaceBetweenAlphabeticalWord],
-     ;; eg2. 10: ValidationError[SpaceBetweenAlphabeticalWord],
-     '(redpen-plain
-       "^\\([^:\n]*\\)?\\(?::\\)?\\([0-9]+\\): ValidationError"
-       redpen-temporary-filename 2 nil nil nil
-       (1 compilation-error-face)))))
+     (add-to-list 'compilation-error-regexp-alist 'redpen-paragraph)
+     (add-to-list
+      'compilation-error-regexp-alist-alist
+      `(redpen-paragraph
+        ,redpen-paragraph-input-regexp
+        redpen-target-filename
+        (1 . 2) (3 . 4)))))
 
-(defun redpen-temporary-filename ()
-  "Return `redpen-temporary-filename'." redpen-temporary-filename)
+(defun redpen-target-filename ()
+  "Return `redpen-target-filename'."
+  redpen-target-filename)
 
 (provide 'redpen-paragraph)
 
