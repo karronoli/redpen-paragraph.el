@@ -41,9 +41,9 @@
 ;; With C-u, replaced by `buffer-file-name'.
 ;;   (defvar redpen-commands
 ;;       ;; for english command
-;;     '("redpen -c /path/to/redpen-conf-en.xml %s 2>/dev/null"
+;;     '("redpen -r json -c /path/to/redpen-conf-en.xml %s 2>/dev/null"
 ;;       ;; for not english command
-;;       "redpen -c /path/to/redpen-conf-ja.xml %s 2>/dev/null"))
+;;       "redpen -r json -c /path/to/redpen-conf-ja.xml %s 2>/dev/null"))
 ;;   (define-key global-map (kbd "C-c C-r") 'redpen-paragraph)
 ;;   (add-hook 'kill-emacs-hook
 ;;             (lambda ()
@@ -111,13 +111,13 @@
   ;; This setting is demo use only.
   `(,(concat
       "curl -s --data-urlencode document@%s"
-      " --data documentParser=PLAIN --data format=plain"
+      " --data documentParser=PLAIN --data format=json"
       " --data lang=en" ;; for english
       ;; " --data-urlencode config@/path/to/redpen-conf-en.xml"
       " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")
     ,(concat
       "curl -s --data-urlencode document@%s"
-      " --data documentParser=PLAIN --data format=plain"
+      " --data documentParser=PLAIN --data format=json"
       " --data lang=ja" ;; for not english
       ;; " --data-urlencode config@/path/to/redpen-conf-ja.xml"
       " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/"))
@@ -201,16 +201,30 @@ if FLAG is not nil, use second command in `redpen-commands'."
            (lambda ()
              (unless (use-region-p) (mark-paragraph))
              (buffer-substring-no-properties (region-beginning) (region-end))))
-         (str (save-excursion
-                (funcall (or handler default-handler))))
+         (string (save-excursion
+                   (funcall (or handler default-handler))))
          (is-english (or redpen-paragraph-force-english
-                      (redpen-paragraph-is-english str)))
-         (command (if is-english
-                      (nth 0 redpen-commands) (nth 1 redpen-commands))))
-    (with-temp-file redpen-temporary-filename (insert str))
-    (compilation-start
-     (format command
-             (if is-whole buffer-file-name redpen-temporary-filename)))))
+                         (redpen-paragraph-is-english string)))
+         (command
+          (let ((template (nth (if is-english 0 1) redpen-commands)))
+            (format template
+                    (if is-whole
+                        buffer-file-name redpen-temporary-filename)))))
+    (with-temp-file redpen-temporary-filename (insert string))
+    (setq redpen-paragraph-beginning-position
+          (if is-whole '(0 . 0)
+            (save-excursion
+              (if (use-region-p) (goto-char (region-beginning))
+                (backward-paragraph))
+              (cons (1- (line-number-at-pos))
+                    (current-column)))))
+    (with-current-buffer
+        (get-buffer-create redpen-paragraph-compilation-buffer-name)
+      (async-shell-command command (current-buffer))
+      (set-process-sentinel
+       (get-buffer-process (current-buffer))
+       'redpen-paragraph-sentinel))))
+
 (defun redpen-paragraph-sentinel (proc desc)
   "Sentinel for redpen-paragraph compilation buffers."
   (message "Compilation %s at %s"

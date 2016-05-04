@@ -75,6 +75,24 @@
          :type 'json-unknown-keyword)
         (advice-remove 'message nop)))))
 
+(ert-deftest invoke-redpen-paragraph ()
+  "Invoke redpen-paragraph."
+  (with-temp-buffer
+    (insert "test")
+    (let ((nop (lambda (FORMAT-STRING &rest ARGS) nil))
+          (redpen-commands
+           `(,(concat
+              "echo "
+              (shell-quote-argument
+               (json-encode '((errors . [((lineNum . 1))]))))))))
+      (advice-add 'message :around nop)
+      (redpen-paragraph)
+      (sleep-for 1) ;; wait until exit of echo process.
+      (advice-remove 'message nop)
+      (with-current-buffer redpen-paragraph-compilation-buffer-name
+        (should (eq (point) 1))
+        (should (eq major-mode 'compilation-mode))))))
+
 ;; Local Variables:
 ;; coding: utf-8
 ;; End:
