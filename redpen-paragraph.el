@@ -197,6 +197,19 @@ if FLAG is not nil, use second command in `redpen-commands'."
     (compilation-start
      (format command
              (if is-whole buffer-file-name redpen-temporary-filename)))))
+(defun redpen-paragraph-sentinel (proc desc)
+  "Sentinel for redpen-paragraph compilation buffers."
+  (message "Compilation %s at %s"
+           (replace-regexp-in-string "\n?$" "" desc)
+           (substring (current-time-string) 0 19))
+  (if (memq (process-status proc) '(exit signal))
+      (with-current-buffer
+          redpen-paragraph-compilation-buffer-name
+        ;; Erase for showing the errors after reading the raw result.
+        (let ((json (json-read-from-string (buffer-string))))
+          (erase-buffer)
+          (redpen-paragraph-list-errors json)))))
+
 (defun redpen-paragraph-list-errors (json)
   "Show the error list for the current buffer by RedPen."
   ;; Split window as well as usual compilation-mode.
