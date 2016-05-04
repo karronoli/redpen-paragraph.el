@@ -25,16 +25,6 @@
   "Detect the other language with english."
   (should-not (redpen-paragraph-is-english "abcあいうえ")))
 
-(require 'compile)
-(ert-deftest redpen-plain-regexp ()
-  "Test of regular expression on compilation."
-  (let* ((str "redpen.15364:10: ValidationError[SpaceBetweenAlphabeticalWord],")
-         (pat (assoc 'redpen-plain compilation-error-regexp-alist-alist))
-         (regexp (nth 1 pat)))
-    (string-match regexp str)
-    (should (equal (match-string 1 str) "redpen.15364"))
-    (should (equal (match-string 2 str) "10"))))
-
 (ert-deftest list-errors-message ()
   "List errors from minimal json."
   (with-temp-buffer
