@@ -7,7 +7,7 @@
 ;; Version: 0.3
 ;; Keywords: document, proofreading, help
 ;; X-URL: https://github.com/karronoli/redpen-paragraph.el
-;; Package-Requires: ((emacs "24") (cl-lib "0.5"))
+;; Package-Requires: ((emacs "24") (cl-lib "0.5") (json "1.4"))
 
 ;; Licensed under the Apache License, Version 2.0 (the "License");
 ;; you may not use this file except in compliance with the License.
@@ -100,6 +100,8 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'compile)
+(require 'json)
 
 (defgroup redpen-paragraph nil
   "RedPen interface for proofreading paragraph."
@@ -135,6 +137,16 @@
    (format "redpen.%s" (emacs-pid)) temporary-file-directory)
   "Filename passed to rendpen.")
 
+(defvar redpen-paragraph-compilation-buffer-name
+  "*compilation*" "Compilation buffer name.")
+
+(defvar redpen-paragraph-beginning-position
+  '(0 . 0) "Position of the paragraph beginning. (lineNum . offset)")
+
+;; eg. 1:1:1:1: ValidationError[StartWithCapitalLetter], Sentence starts with a lowercase character "t". at line: test
+(defvar redpen-paragraph-input-pattern
+  "%d:%d:%d:%d: ValidationError[%s], %s at line: %s\n"
+  "Adjust to suit the input regexp.")
 (autoload 'org-backward-paragraph "org")
 (autoload 'org-forward-paragraph "org")
 (defvar redpen-paragraph-alist
@@ -185,6 +197,54 @@ if FLAG is not nil, use second command in `redpen-commands'."
     (compilation-start
      (format command
              (if is-whole buffer-file-name redpen-temporary-filename)))))
+(defun redpen-paragraph-list-errors (json)
+  "Show the error list for the current buffer by RedPen."
+  ;; Split window as well as usual compilation-mode.
+  (switch-to-buffer-other-window (current-buffer))
+  (set-buffer redpen-paragraph-compilation-buffer-name)
+  (mapc
+   (lambda (err)
+     (let* ((validator (or (cdr (assoc 'validator err)) ""))
+            (message (or (cdr (assoc 'message err)) ""))
+            (sentence (or (cdr (assoc 'sentence err)) ""))
+            ;; lineNum is still used on RedPen
+            (lineNum (or (cdr (assoc 'lineNum err)) 0))
+            (start-pos (cdr (assoc 'startPosition err)))
+            (start-lineNum
+             (+ (car redpen-paragraph-beginning-position)
+                (or (cdr (assoc 'lineNum start-pos))
+                    lineNum)))
+            (start-offset
+             (+ 1 (cdr redpen-paragraph-beginning-position)
+                (or (cdr (assoc 'offset start-pos))
+                    ;; sentenceStartColumnNum is still used on RedPen
+                    (if (assoc 'sentenceStartColumnNum err)
+                        (1+ (cdr (assoc 'sentenceStartColumnNum err))))
+                    0)))
+            (end-pos (cdr (assoc 'endPosition err)))
+            (end-lineNum
+             (+ (car redpen-paragraph-beginning-position)
+                (or (cdr (assoc 'lineNum end-pos))
+                    lineNum)))
+            (end-offset
+             (+ (cdr redpen-paragraph-beginning-position)
+                (or (cdr (assoc 'offset end-pos)) 0))))
+       (insert (format
+                redpen-paragraph-input-pattern
+                ;; Emacs displays from the 1st line.
+                (if (eq start-lineNum 0) 1 start-lineNum)
+                (if (eq end-lineNum 0) 1 end-lineNum)
+                start-offset
+                (if (> start-offset end-offset) start-offset end-offset)
+                validator message sentence))))
+   (cl-sort
+    (cdr (assoc 'errors json))
+    (lambda (a b)
+      (< (cdr (assoc 'lineNum a)) (cdr (assoc 'lineNum b))))))
+  ;; According to `redpen-paragraph-input-regexp',
+  ;; Parse `redpen-paragraph-input-pattern' in `compilation-mode'.
+  (compilation-mode)
+  (goto-char (point-min)))
 
 (eval-after-load "compile"
   '(progn
