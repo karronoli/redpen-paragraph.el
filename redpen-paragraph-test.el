@@ -35,6 +35,18 @@
     (should (equal (match-string 1 str) "redpen.15364"))
     (should (equal (match-string 2 str) "10"))))
 
+(ert-deftest list-errors-message ()
+  "List errors from minimal json."
+  (with-temp-buffer
+    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
+          (message "test"))
+      (redpen-paragraph-list-errors
+       `((errors . [((message . ,message))])))
+      (should
+       (equal
+        (buffer-string)
+        (format redpen-paragraph-input-pattern 1 1 1 1 "" message ""))))))
+
 ;; Local Variables:
 ;; coding: utf-8
 ;; End:
