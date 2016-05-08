@@ -289,9 +289,7 @@ if FLAG is not nil, use second command in `redpen-commands'."
 
 (eval-after-load "compile"
   '(progn
-     (defvar compilation-error-regexp-alist)
      (add-to-list 'compilation-error-regexp-alist 'redpen-paragraph)
-     (defvar compilation-error-regexp-alist-alist)
      (add-to-list
       'compilation-error-regexp-alist-alist
       `(redpen-paragraph
