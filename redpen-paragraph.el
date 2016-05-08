@@ -148,10 +148,10 @@
 
 ;; eg. 1:1:1:1: ValidationError[StartWithCapitalLetter], Sentence starts with a lowercase character "t". at line: test
 (defvar redpen-paragraph-input-pattern
-  "%d:%d:%d:%d: ValidationError[%s], %s at line: %s\n"
+  "%s at lineNum %d-%d, offset %d-%d: %s\n"
   "Adjust to suit the input regexp.")
 (defvar redpen-paragraph-input-regexp
-  "^\\([0-9]+\\):\\([0-9]+\\):\\([0-9]+\\):\\([0-9]+\\): ValidationError"
+  "^\\sw+ at lineNum \\([0-9]+\\)-\\([0-9]+\\), offset \\([0-9]+\\)-\\([0-9]+\\): .*$"
   "Adjust to suit the input pattern.
 
 regexp capture & bind list
@@ -272,12 +272,16 @@ if FLAG is not nil, use second command in `redpen-commands'."
                 (or (cdr (assoc 'offset end-pos)) 0))))
        (insert (format
                 redpen-paragraph-input-pattern
+                validator
                 ;; Emacs displays from the 1st line.
                 (if (eq start-lineNum 0) 1 start-lineNum)
                 (if (eq end-lineNum 0) 1 end-lineNum)
                 start-offset
                 (if (> start-offset end-offset) start-offset end-offset)
-                validator message sentence))))
+                message))
+       (if (> (length sentence) 0)
+           (insert sentence "\n"))
+       (insert "\n")))
    (cl-sort
     (cdr (assoc 'errors json))
     (lambda (a b)
