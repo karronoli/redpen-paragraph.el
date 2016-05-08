@@ -100,6 +100,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'compile)
 
 (defgroup redpen-paragraph nil
   "RedPen interface for proofreading paragraph."
@@ -188,9 +189,7 @@ if FLAG is not nil, use second command in `redpen-commands'."
 
 (eval-after-load "compile"
   '(progn
-    (defvar compilation-error-regexp-alist)
     (add-to-list 'compilation-error-regexp-alist 'redpen-plain)
-    (defvar compilation-error-regexp-alist-alist)
     (add-to-list
      'compilation-error-regexp-alist-alist
      ;; eg1. redpen.15364:10: ValidationError[SpaceBetweenAlphabeticalWord],
