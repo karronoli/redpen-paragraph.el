@@ -23,12 +23,15 @@
 
 ;;; Commentary:
 ;;
-;; This package proofread paragraph by redpen,
-;; parse RedPen plain Output Format.
-;; Priority for how to get paragraph:
+;; This package proofread some paragraph or a file by RedPen,
+;; parse the json Output Format.
+;;
+;; You can get some paragraph by the priority.
 ;; 1. by customization on specific major mode
 ;; 2. active region
 ;; 3. (mark-paragraph)
+;;
+;; Or you can get a file regardless of the priority.
 
 ;;; Usage:
 ;;
@@ -39,6 +42,7 @@
 ;; `redpen-commands' is for demo by default.
 ;; '%s' is replaced by `redpen-temporary-filename'.
 ;; With C-u, replaced by `buffer-file-name'.
+;;
 ;;   (defvar redpen-commands
 ;;       ;; for english command
 ;;     '("redpen -r json -c /path/to/redpen-conf-en.xml %s 2>/dev/null"
@@ -52,50 +56,26 @@
 ;;
 ;; You can add how to get paragraph by `redpen-paragraph-alist'.
 ;; `org-mode' setting is enabled by default.
+;;
 ;;   (with-eval-after-load "org"
 ;;     (defvar org-mode-map)
 ;;     ;; Override `org-reveal' by `global-map' or set other key.
 ;;     (define-key org-mode-map (kbd "C-c C-r") nil))
 ;;
 ;; You may need extra setting for convenient.
-;; - redpen wrapper example
-;;   #!/bin/sh
-;;   env JAVA_OPTS=-Dfile.encoding=UTF-8 \
-;;     bin/redpen -c conf/redpen-conf-ja.xml $* 2>&1 \
-;;     | grep -v '^$' | grep -F -v '[INFO ]' \
-;;     && exit 1 || exit 0
-;;
 ;; - `popwin-mode' for closing buffer. (but often not work...)
+;;
 ;;   (require 'popwin)
 ;;   (popwin-mode 1)
 ;;   (push '(compilation-mode :noselect t) popwin:special-display-config)
 ;;
-;; - `flycheck-mode' (eg. for markdown-mode)
-;; (require 'flycheck)
-;; (flycheck-define-checker redpen-markdown
-;;   "redpen for markdown by flycheck"
-;;   :command ("curl" "-s" "--data-urlencode" "document@-"
-;;             "--data" "format=plain" "--data" "documentParser=MARKDOWN"
-;;             "--data" "lang=en"  ;; for english
-;;             ; " --data-urlencode config@/path/to/redpen-conf-en.xml"
-;;             "http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/"
-;;             source)
-;;   :standard-input t
-;;   :error-patterns
-;;   ((error line-start
-;;           line ": ValidationError" (message) line-end))
-;;   :modes (markdown-mode))
-;; (add-hook 'markdown-mode-hook
-;;           (lambda ()
-;;             (flycheck-mode t)
-;;             (flycheck-select-checker 'redpen-markdown)))
-;;
 ;; - save hook
-;; (add-hook 'after-save-hook
-;;           (lambda ()
-;;             (if (eq major-mode 'org-mode)
-;;                 (let ((redpen-paragraph-force-reading-whole t))
-;;                   (redpen-paragraph)))))
+;;
+;;   (add-hook 'after-save-hook
+;;             (lambda ()
+;;               (if (eq major-mode 'org-mode)
+;;                   (let ((redpen-paragraph-force-reading-whole t))
+;;                     (redpen-paragraph)))))
 
 ;;; Code:
 
