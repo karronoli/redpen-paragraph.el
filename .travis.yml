@@ -1,0 +1,25 @@
+language: generic
+
+sudo: false
+
+addons:
+  apt:
+    packages:
+    - emacs24
+
+addons:
+  apt:
+    sources:
+    - cassou-emacs
+
+env:
+  matrix:
+    - EMACS=emacs24
+
+script:
+  $EMACS --version &&
+  $EMACS -Q -batch -L . -l redpen-paragraph-test.el -f ert-run-tests-batch-and-exit
+
+# Local Variables:
+# coding: utf-8
+# End:
