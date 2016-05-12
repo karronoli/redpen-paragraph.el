@@ -4,13 +4,10 @@ sudo: false
 
 addons:
   apt:
-    packages:
-    - emacs24
-
-addons:
-  apt:
     sources:
     - cassou-emacs
+    packages:
+    - emacs24
 
 env:
   matrix:
