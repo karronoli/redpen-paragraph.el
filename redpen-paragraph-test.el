@@ -52,12 +52,9 @@
                 (json-encode '((errors . [((lineNum . 1))])))))
        (current-buffer))
       (let ((proc (get-buffer-process (current-buffer)))
-            (desc "dummy")
-            (nop (lambda (FORMAT-STRING &rest ARGS) nil)))
-        (advice-add 'message :around nop)
+            (desc "dummy"))
         (sleep-for 1) ;; wait until exit of echo process.
-        (redpen-paragraph-sentinel proc desc)
-        (advice-remove 'message nop))))
+        (redpen-paragraph-sentinel proc desc))))
   (should t))
 
 (ert-deftest read-the-process-stdout-as-not-json ()
@@ -69,29 +66,23 @@
        "echo test"
        (current-buffer))
       (let ((proc (get-buffer-process (current-buffer)))
-            (desc "dummy")
-            (nop (lambda (FORMAT-STRING &rest ARGS) nil)))
-        (advice-add 'message :around nop)
+            (desc "dummy"))
         (sleep-for 1) ;; wait until exit of echo process.
         (should-error
          (redpen-paragraph-sentinel proc desc)
-         :type 'json-unknown-keyword)
-        (advice-remove 'message nop)))))
+         :type 'json-unknown-keyword)))))
 
 (ert-deftest invoke-redpen-paragraph ()
   "Invoke redpen-paragraph."
   (with-temp-buffer
     (insert "test")
-    (let ((nop (lambda (FORMAT-STRING &rest ARGS) nil))
-          (redpen-commands
+    (let ((redpen-commands
            `(,(concat
               "echo "
               (shell-quote-argument
                (json-encode '((errors . [((lineNum . 1))]))))))))
-      (advice-add 'message :around nop)
       (redpen-paragraph)
       (sleep-for 1) ;; wait until exit of echo process.
-      (advice-remove 'message nop)
       (with-current-buffer redpen-paragraph-compilation-buffer-name
         (should (eq (point) 1))
         (should (eq major-mode 'compilation-mode))))))
