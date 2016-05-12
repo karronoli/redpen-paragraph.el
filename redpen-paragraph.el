@@ -148,10 +148,10 @@
 
 ;; eg. 1:1:1:1: ValidationError[StartWithCapitalLetter], Sentence starts with a lowercase character "t". at line: test
 (defvar redpen-paragraph-input-pattern
-  "%s at lineNum %d-%d, offset %d-%d: %s\n"
+  "%s at start %d.%d, end %d.%d: %s\n"
   "Adjust to suit the input regexp.")
 (defvar redpen-paragraph-input-regexp
-  "^\\sw+ at lineNum \\([0-9]+\\)-\\([0-9]+\\), offset \\([0-9]+\\)-\\([0-9]+\\): .*$"
+  "^\\sw+ at start \\([0-9]+\\).\\([0-9]+\\), end \\([0-9]+\\).\\([0-9]+\\): .*$"
   "Adjust to suit the input pattern.
 
 regexp capture & bind list
@@ -275,8 +275,8 @@ if FLAG is not nil, use second command in `redpen-commands'."
                 validator
                 ;; Emacs displays from the 1st line.
                 (if (eq start-lineNum 0) 1 start-lineNum)
-                (if (eq end-lineNum 0) 1 end-lineNum)
                 start-offset
+                (if (eq end-lineNum 0) 1 end-lineNum)
                 (if (> start-offset end-offset) start-offset end-offset)
                 message))
        (if (> (length sentence) 0)
@@ -299,7 +299,7 @@ if FLAG is not nil, use second command in `redpen-commands'."
       `(redpen-paragraph
         ,redpen-paragraph-input-regexp
         redpen-target-filename
-        (1 . 2) (3 . 4)))))
+        (1 . 3) (2 . 4)))))
 
 (defun redpen-target-filename ()
   "Return `redpen-target-filename'."

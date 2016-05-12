@@ -29,13 +29,16 @@
   "List errors from minimal json."
   (with-temp-buffer
     (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
-          (message "test"))
+          (message "message")
+          (validator "validator"))
       (redpen-paragraph-list-errors
-       `((errors . [((message . ,message))])))
+       `((errors . [((message . ,message) (validator . ,validator))])))
       (should
        (equal
         (buffer-string)
-        (format redpen-paragraph-input-pattern 1 1 1 1 "" message ""))))))
+        (concat (format redpen-paragraph-input-pattern
+                        validator 1 1 1 1 message)
+                "\n"))))))
 
 (require 'json)
 (ert-deftest read-the-process-stdout-as-json ()
