@@ -13,9 +13,13 @@ env:
   matrix:
     - EMACS=emacs24
 
+before_install:
+  - git clone https://github.com/cask/cask.git "$HOME/.cask"
+  - export PATH="$HOME/.cask/bin:$PATH"
+install:
+  - cask install
 script:
-  $EMACS --version &&
-  $EMACS -Q -batch -L . -l redpen-paragraph-test.el -f ert-run-tests-batch-and-exit
+  - cask exec ert-runner
 
 # Local Variables:
 # coding: utf-8
