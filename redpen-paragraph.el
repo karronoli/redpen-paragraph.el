@@ -91,13 +91,13 @@
   ;; This setting is demo use only.
   `(,(concat
       "curl -s --data-urlencode document@%s"
-      " --data documentParser=PLAIN --data format=json"
+      " --data format=json"
       " --data lang=en" ;; for english
       ;; " --data-urlencode config@/path/to/redpen-conf-en.xml"
       " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")
     ,(concat
       "curl -s --data-urlencode document@%s"
-      " --data documentParser=PLAIN --data format=json"
+      " --data format=json"
       " --data lang=ja" ;; for not english
       ;; " --data-urlencode config@/path/to/redpen-conf-ja.xml"
       " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/"))
