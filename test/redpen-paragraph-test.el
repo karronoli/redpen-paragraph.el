@@ -118,7 +118,7 @@
       (redpen-paragraph)
       (sleep-for 1)
       (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "test1\n" (buffer-string))))
+        (should (equal "\ntest2\n" (buffer-string))))
       (kill-buffer (find-file-noselect redpen-temporary-filename))
 
       ;; 3rd line
@@ -127,7 +127,7 @@
       (redpen-paragraph)
       (sleep-for 1)
       (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "test2\n" (buffer-string))))
+        (should (equal "\ntest2\n" (buffer-string))))
       (kill-buffer (find-file-noselect redpen-temporary-filename))
 
       (goto-char (point-min))
@@ -136,16 +136,16 @@
       (redpen-paragraph)
       (sleep-for 1)
       (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "test2\n" (buffer-string))))
+        (should (equal "\ntest2\n" (buffer-string))))
       (kill-buffer (find-file-noselect redpen-temporary-filename))
 
-      ;; 4th line
+      ;; ;; 4th line
       (goto-char (point-min))
       (forward-line 1)
       (redpen-paragraph)
       (sleep-for 1)
       (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "test2\n" (buffer-string))))
+        (should (equal "\ntest2\n" (buffer-string))))
       (kill-buffer (find-file-noselect redpen-temporary-filename))
 
       ;; 5th line
@@ -154,7 +154,7 @@
       (redpen-paragraph)
       (sleep-for 1)
       (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "test3" (buffer-string))))
+        (should (equal "\ntest3" (buffer-string))))
       (kill-buffer (find-file-noselect redpen-temporary-filename))
 
       (goto-char (point-min))
@@ -163,7 +163,7 @@
       (redpen-paragraph)
       (sleep-for 1)
       (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "test3" (buffer-string)))))))
+        (should (equal "\ntest3" (buffer-string)))))))
 
 ;; Local Variables:
 ;; coding: utf-8
