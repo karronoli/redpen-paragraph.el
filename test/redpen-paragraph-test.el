@@ -87,6 +87,84 @@
         (should (eq (point) 1))
         (should (eq major-mode 'compilation-mode))))))
 
+(ert-deftest check-cursor-position ()
+  "Check cursor position to paragraph."
+  (with-temp-buffer
+    (insert "test1\n\ntest2\n\ntest3")
+    (let ((redpen-commands
+           `(,(concat
+              "echo "
+              (shell-quote-argument
+               (json-encode '((errors . []))))))))
+      ;; 1st line
+      (goto-char (point-min))
+      (redpen-paragraph)
+      (sleep-for 1)
+      (with-current-buffer (find-file-noselect redpen-temporary-filename)
+        (should (equal "test1\n" (buffer-string))))
+      (kill-buffer (find-file-noselect redpen-temporary-filename))
+
+      (goto-char (point-min))
+      (move-end-of-line 1)
+      (redpen-paragraph)
+      (sleep-for 1)
+      (with-current-buffer (find-file-noselect redpen-temporary-filename)
+        (should (equal "test1\n" (buffer-string))))
+      (kill-buffer (find-file-noselect redpen-temporary-filename))
+
+      ;; 2nd line
+      (goto-char (point-min))
+      (forward-line 1)
+      (redpen-paragraph)
+      (sleep-for 1)
+      (with-current-buffer (find-file-noselect redpen-temporary-filename)
+        (should (equal "test1\n" (buffer-string))))
+      (kill-buffer (find-file-noselect redpen-temporary-filename))
+
+      ;; 3rd line
+      (goto-char (point-min))
+      (forward-line 2)
+      (redpen-paragraph)
+      (sleep-for 1)
+      (with-current-buffer (find-file-noselect redpen-temporary-filename)
+        (should (equal "test2\n" (buffer-string))))
+      (kill-buffer (find-file-noselect redpen-temporary-filename))
+
+      (goto-char (point-min))
+      (forward-line 2)
+      (move-end-of-line 1)
+      (redpen-paragraph)
+      (sleep-for 1)
+      (with-current-buffer (find-file-noselect redpen-temporary-filename)
+        (should (equal "test2\n" (buffer-string))))
+      (kill-buffer (find-file-noselect redpen-temporary-filename))
+
+      ;; 4th line
+      (goto-char (point-min))
+      (forward-line 1)
+      (redpen-paragraph)
+      (sleep-for 1)
+      (with-current-buffer (find-file-noselect redpen-temporary-filename)
+        (should (equal "test2\n" (buffer-string))))
+      (kill-buffer (find-file-noselect redpen-temporary-filename))
+
+      ;; 5th line
+      (goto-char (point-min))
+      (forward-line 4)
+      (redpen-paragraph)
+      (sleep-for 1)
+      (with-current-buffer (find-file-noselect redpen-temporary-filename)
+        (should (equal "test3" (buffer-string))))
+      (kill-buffer (find-file-noselect redpen-temporary-filename))
+
+      (goto-char (point-min))
+      (forward-line 4)
+      (move-end-of-line 1)
+      (redpen-paragraph)
+      (sleep-for 1)
+      (with-current-buffer (find-file-noselect redpen-temporary-filename)
+        (should (equal "test3" (buffer-string)))))))
+
 ;; Local Variables:
 ;; coding: utf-8
 ;; End:
