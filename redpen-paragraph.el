@@ -89,18 +89,37 @@
 
 (defvar redpen-commands
   ;; This setting is demo use only.
-  `(,(concat
-      "curl -s --data-urlencode document@%s"
-      " --data format=json"
-      " --data lang=en" ;; for english
-      ;; " --data-urlencode config@/path/to/redpen-conf-en.xml"
-      " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")
-    ,(concat
-      "curl -s --data-urlencode document@%s"
-      " --data format=json"
-      " --data lang=ja" ;; for not english
-      ;; " --data-urlencode config@/path/to/redpen-conf-ja.xml"
-      " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/"))
+  (cond
+   ((or (locate-file "curl" exec-path)
+        (locate-file "curl.exe" exec-path))
+    `(,(concat
+        "curl -s --data-urlencode document@%s"
+        " --data format=json --data lang=en" ;; for english
+        ;; " --data-urlencode config@/path/to/redpen-conf-en.xml"
+        " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")
+      ,(concat
+        "curl -s --data-urlencode document@%s"
+        " --data format=json --data lang=ja" ;; for not english
+        ;; " --data-urlencode config@/path/to/redpen-conf-ja.xml"
+        " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")))
+   ((and (eq system-type 'windows-nt)
+         (locate-file "powershell.exe" exec-path))
+    `(,(concat
+        "chcp 65001>NUL & powershell -Command \"& {"
+        "(Invoke-WebRequest -Uri"
+        " 'http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/'"
+        " -Method Post -Body @{"
+        "  lang = 'en'; format = 'json';"
+        "  document = (Get-Content -Raw '%s' -Encoding UTF8)}"
+        ").Content}\"")
+      ,(concat
+        "chcp 65001>NUL & powershell -Command \"& {"
+        "(Invoke-WebRequest -Uri"
+        " 'http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/'"
+        " -Method Post -Body @{"
+        "  lang = 'ja'; format = 'json';"
+        "  document = (Get-Content -Raw '%s' -Encoding UTF8)}"
+        ").Content}\""))))
   "Define redpen commands. 1st is for english, 2nd is for other language.")
 
 (defvar redpen-paragraph-force-english nil
