@@ -23,6 +23,10 @@
 
 (ert-deftest list-errors-message ()
   "List errors from minimal json."
+(ert-deftest target-filename ()
+  "Return target filename."
+  (should (eq redpen-target-filename (redpen-target-filename))))
+
   (with-temp-buffer
     (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
           (message "message")
@@ -46,6 +50,25 @@
                         endLineNum endOffset
                         message)
                 sentence "\n\n")
+        (buffer-string))))))
+
+(ert-deftest list-sorted-errors ()
+  "List the sorted errors."
+  (with-temp-buffer
+    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
+          (startLineNum1 1) (startLineNum2 2) (startLineNum3 3))
+      (redpen-paragraph-list-errors
+       `((errors . [((lineNum . ,startLineNum2))
+                    ((lineNum . ,startLineNum3))
+                    ((lineNum . ,startLineNum1))])))
+      (should
+       (equal
+        (concat (format redpen-paragraph-input-pattern
+                        "" startLineNum1 1 startLineNum1 1 "") "\n"
+                (format redpen-paragraph-input-pattern
+                        "" startLineNum2 1 startLineNum2 1 "") "\n"
+                (format redpen-paragraph-input-pattern
+                        "" startLineNum3 1 startLineNum3 1 "") "\n")
         (buffer-string))))))
 
 (require 'json)
@@ -125,7 +148,17 @@
              (should (equal expected (buffer-string))))
            (kill-buffer
             (find-file-noselect redpen-temporary-filename))))
-       tests))))
+       tests)
+
+      (mark-whole-buffer)
+       ;; for (use-region-p) on emacs --batch
+      (let ((transient-mark-mode t))
+        (redpen-paragraph))
+      (sleep-for 1) ;; wait until exit of echo process.
+      (with-current-buffer
+          (find-file-noselect redpen-temporary-filename)
+        (should
+         (equal "test1\n\ntest2\n\ntest3" (buffer-string)))))))
 
 ;; Local Variables:
 ;; coding: utf-8
