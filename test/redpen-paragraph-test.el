@@ -21,18 +21,18 @@
   (should-not (redpen-paragraph-is-english "abcあいう"))
   (should-not (redpen-paragraph-is-english "abcあいうえ")))
 
-(ert-deftest list-errors-message ()
-  "List errors from minimal json."
 (ert-deftest target-filename ()
   "Return target filename."
   (should (eq redpen-target-filename (redpen-target-filename))))
 
+(ert-deftest list-all-parameter-error ()
+  "List the all parameter error."
   (with-temp-buffer
     (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
-          (message "message")
           (validator "validator")
           (startLineNum 1) (startOffset 2)
           (endLineNum 4) (endOffset 5)
+          (message "message")
           (sentence "sentence"))
       (redpen-paragraph-list-errors
        `((errors . [((validator . ,validator)
@@ -63,45 +63,51 @@
                     ((lineNum . ,startLineNum1))])))
       (should
        (equal
-        (concat (format redpen-paragraph-input-pattern
-                        "" startLineNum1 1 startLineNum1 1 "") "\n"
-                (format redpen-paragraph-input-pattern
-                        "" startLineNum2 1 startLineNum2 1 "") "\n"
-                (format redpen-paragraph-input-pattern
-                        "" startLineNum3 1 startLineNum3 1 "") "\n")
+        (concat
+         (format redpen-paragraph-input-pattern
+                 "" startLineNum1 1 startLineNum1 1 "")
+         "\n"
+         (format redpen-paragraph-input-pattern
+                 "" startLineNum2 1 startLineNum2 1 "")
+         "\n"
+         (format redpen-paragraph-input-pattern
+                 "" startLineNum3 1 startLineNum3 1 "")
+         "\n")
         (buffer-string))))))
 
 (require 'json)
 (ert-deftest read-the-process-stdout-as-json ()
   "Read the process stdout as JSON."
   (with-temp-buffer
-    (let ((redpen-paragraph-compilation-buffer-name
-           (current-buffer)))
-      (async-shell-command
-       (concat "echo "
-               (shell-quote-argument
-                (json-encode '((errors . [((lineNum . 1))])))))
-       (current-buffer))
-      (let ((proc (get-buffer-process (current-buffer)))
-            (desc "dummy"))
-        (sleep-for 1) ;; wait until exit of echo process.
-        (redpen-paragraph-sentinel proc desc))))
+    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
+          (proc
+           (progn
+             (async-shell-command
+              (concat "echo "
+                      (shell-quote-argument
+                       (json-encode '((errors . [])))))
+              (current-buffer))
+             (get-buffer-process (current-buffer))))
+          (desc "dummy"))
+      (sleep-for 1) ;; wait until exit of echo process.
+      (redpen-paragraph-sentinel proc desc)))
   (should t))
 
 (ert-deftest read-the-process-stdout-as-not-json ()
   "Read the process stdout as not JSON."
   (with-temp-buffer
-    (let ((redpen-paragraph-compilation-buffer-name
-           (current-buffer)))
-      (async-shell-command
-       "echo test"
-       (current-buffer))
-      (let ((proc (get-buffer-process (current-buffer)))
-            (desc "dummy"))
-        (sleep-for 1) ;; wait until exit of echo process.
-        (should-error
-         (redpen-paragraph-sentinel proc desc)
-         :type 'json-unknown-keyword)))))
+    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
+          (proc
+           (progn
+             (async-shell-command
+              "echo test"
+              (current-buffer))
+             (get-buffer-process (current-buffer))))
+          (desc "dummy"))
+      (sleep-for 1) ;; wait until exit of echo process.
+      (should-error
+       (redpen-paragraph-sentinel proc desc)
+       :type 'json-unknown-keyword))))
 
 (ert-deftest invoke-redpen-paragraph ()
   "Invoke redpen-paragraph."
@@ -151,7 +157,7 @@
        tests)
 
       (mark-whole-buffer)
-       ;; for (use-region-p) on emacs --batch
+      ;; for (use-region-p) on emacs --batch
       (let ((transient-mark-mode t))
         (redpen-paragraph))
       (sleep-for 1) ;; wait until exit of echo process.
