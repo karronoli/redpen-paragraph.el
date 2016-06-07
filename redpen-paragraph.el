@@ -226,6 +226,8 @@ if FLAG is not nil, use second command in `redpen-commands'."
 
 (defun redpen-paragraph-sentinel (proc desc)
   "Sentinel for redpen-paragraph compilation buffers."
+  (cl-assert (processp proc))
+  (cl-assert (stringp desc))
   (message "Compilation %s at %s"
            (replace-regexp-in-string "\n?$" "" desc)
            (substring (current-time-string) 0 19))
@@ -239,6 +241,9 @@ if FLAG is not nil, use second command in `redpen-commands'."
 
 (defun redpen-paragraph-list-errors (json)
   "Show the error list for the current buffer by RedPen."
+  (cl-assert (assoc 'errors json))
+  (cl-assert (vectorp (cdr (assoc 'errors json))))
+
   ;; Split window as well as usual compilation-mode.
   (switch-to-buffer-other-window (current-buffer))
   (set-buffer redpen-paragraph-compilation-buffer-name)

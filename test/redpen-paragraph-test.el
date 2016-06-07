@@ -30,15 +30,27 @@
   (with-temp-buffer
     (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
           (message "message")
-          (validator "validator"))
+          (validator "validator")
+          (startLineNum 1) (startOffset 2)
+          (endLineNum 4) (endOffset 5)
+          (sentence "sentence"))
       (redpen-paragraph-list-errors
-       `((errors . [((message . ,message) (validator . ,validator))])))
+       `((errors . [((validator . ,validator)
+                     (startPosition . ((lineNum . ,startLineNum)
+                                       (offset . ,startOffset)))
+                     (endPosition . ((lineNum . ,endLineNum)
+                                     (offset . , endOffset)))
+                     (message . ,message)
+                     (sentence . ,sentence))])))
       (should
        (equal
-        (buffer-string)
         (concat (format redpen-paragraph-input-pattern
-                        validator 1 1 1 1 message)
-                "\n"))))))
+                        validator
+                        startLineNum (1+ startOffset)
+                        endLineNum endOffset
+                        message)
+                sentence "\n\n")
+        (buffer-string))))))
 
 (require 'json)
 (ert-deftest read-the-process-stdout-as-json ()
@@ -75,16 +87,18 @@
 (ert-deftest invoke-redpen-paragraph ()
   "Invoke redpen-paragraph."
   (with-temp-buffer
-    (insert "test")
     (let ((redpen-commands
            `(,(concat
-              "echo "
-              (shell-quote-argument
-               (json-encode '((errors . [((lineNum . 1))]))))))))
+               "echo "
+               (shell-quote-argument
+                (json-encode '((errors . [()]))))))))
       (redpen-paragraph)
       (sleep-for 1) ;; wait until exit of echo process.
       (with-current-buffer redpen-paragraph-compilation-buffer-name
-        (should (eq (point) 1))
+        (should (equal
+                 " at start 1.1, end 1.1: \n\n"
+                 (buffer-string)))
+        (should (eq (point) (point-min)))
         (should (eq major-mode 'compilation-mode))))))
 
 (ert-deftest check-cursor-position ()
