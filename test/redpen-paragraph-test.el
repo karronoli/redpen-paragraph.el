@@ -11,18 +11,14 @@
 ;;; Code:
 (ert-deftest detect-english ()
   "Detect english."
-  (should (redpen-paragraph-is-english "abc")))
+  (should (redpen-paragraph-is-english ""))
+  (should (redpen-paragraph-is-english "abc"))
+  (should (redpen-paragraph-is-english "abcdあいう")))
 
 (ert-deftest detect-not-english ()
   "Detect the other language."
-  (should-not (redpen-paragraph-is-english "あいう")))
-
-(ert-deftest detect-prefer-english ()
-  "Detect english with the other language."
-  (should (redpen-paragraph-is-english "abcdあいう")))
-
-(ert-deftest detect-prefer-not-english ()
-  "Detect the other language with english."
+  (should-not (redpen-paragraph-is-english "あいう"))
+  (should-not (redpen-paragraph-is-english "abcあいう"))
   (should-not (redpen-paragraph-is-english "abcあいうえ")))
 
 (ert-deftest list-errors-message ()

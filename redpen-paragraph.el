@@ -178,11 +178,13 @@ regexp capture & bind list
 
 (defun redpen-paragraph-is-english (text)
   "Detect language by TEXT."
-  (let* ((full (length text))
-         (not-english
-          (length (replace-regexp-in-string "[\x21-\x7e]" "" text)))
-         (english (- full not-english)))
-    (> english not-english)))
+  (cl-assert (stringp text))
+  (if (eq (length text) 0) t
+    (let* ((full (length text))
+           (not-english
+            (length (replace-regexp-in-string "[\x21-\x7e]" "" text)))
+           (english (- full not-english)))
+      (> english not-english))))
 
 ;;;###autoload
 (defun redpen-paragraph (&optional flag)
