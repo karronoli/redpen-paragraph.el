@@ -93,77 +93,29 @@
     (insert "test1\n\ntest2\n\ntest3")
     (let ((redpen-commands
            `(,(concat
-              "echo "
-              (shell-quote-argument
-               (json-encode '((errors . []))))))))
-      ;; 1st line
-      (goto-char (point-min))
-      (redpen-paragraph)
-      (sleep-for 1)
-      (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "test1\n" (buffer-string))))
-      (kill-buffer (find-file-noselect redpen-temporary-filename))
-
-      (goto-char (point-min))
-      (move-end-of-line 1)
-      (redpen-paragraph)
-      (sleep-for 1)
-      (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "test1\n" (buffer-string))))
-      (kill-buffer (find-file-noselect redpen-temporary-filename))
-
-      ;; 2nd line
-      (goto-char (point-min))
-      (forward-line 1)
-      (redpen-paragraph)
-      (sleep-for 1)
-      (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "\ntest2\n" (buffer-string))))
-      (kill-buffer (find-file-noselect redpen-temporary-filename))
-
-      ;; 3rd line
-      (goto-char (point-min))
-      (forward-line 2)
-      (redpen-paragraph)
-      (sleep-for 1)
-      (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "\ntest2\n" (buffer-string))))
-      (kill-buffer (find-file-noselect redpen-temporary-filename))
-
-      (goto-char (point-min))
-      (forward-line 2)
-      (move-end-of-line 1)
-      (redpen-paragraph)
-      (sleep-for 1)
-      (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "\ntest2\n" (buffer-string))))
-      (kill-buffer (find-file-noselect redpen-temporary-filename))
-
-      ;; ;; 4th line
-      (goto-char (point-min))
-      (forward-line 1)
-      (redpen-paragraph)
-      (sleep-for 1)
-      (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "\ntest2\n" (buffer-string))))
-      (kill-buffer (find-file-noselect redpen-temporary-filename))
-
-      ;; 5th line
-      (goto-char (point-min))
-      (forward-line 4)
-      (redpen-paragraph)
-      (sleep-for 1)
-      (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "\ntest3" (buffer-string))))
-      (kill-buffer (find-file-noselect redpen-temporary-filename))
-
-      (goto-char (point-min))
-      (forward-line 4)
-      (move-end-of-line 1)
-      (redpen-paragraph)
-      (sleep-for 1)
-      (with-current-buffer (find-file-noselect redpen-temporary-filename)
-        (should (equal "\ntest3" (buffer-string)))))))
+               "echo "
+               (shell-quote-argument
+                (json-encode '((errors . [])))))))
+          ;; lineNum position-on-the-line expected-result
+          (tests '((1 nil "test1\n") (1 'end "test1\n")
+                   (2 nil "\ntest2\n")
+                   (3 nil "\ntest2\n") (3 'end "\ntest2\n")
+                   (4 nil "\ntest3")
+                   (5 nil "\ntest3") (5 'end "\ntest3"))))
+      (mapc
+       (lambda (test)
+         (cl-destructuring-bind (lineNum position expected) test
+           (goto-char (point-min))
+           (if (> lineNum 1) (forward-line (1- lineNum)))
+           (if (eq position 'end) (move-end-of-line 1))
+           (redpen-paragraph)
+           (sleep-for 1) ;; wait until exit of echo process.
+           (with-current-buffer
+               (find-file-noselect redpen-temporary-filename)
+             (should (equal expected (buffer-string))))
+           (kill-buffer
+            (find-file-noselect redpen-temporary-filename))))
+       tests))))
 
 ;; Local Variables:
 ;; coding: utf-8
