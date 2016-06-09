@@ -270,10 +270,15 @@ if FLAG is not nil, use second command in `redpen-commands'."
                   (+ (car redpen-paragraph-beginning-position)
                      (funcall position err :end :line))
                   1))
+                ;; Add cursor offset to RedPen offset only in the 1st line
                 (start-offset
-                 (+ 1 (funcall position err :start :offset)))
+                 (+ 1 (funcall position err :start :offset)
+                    (if (eq 1 (funcall position err :start :line))
+                        (cdr redpen-paragraph-beginning-position) 0)))
                 (end-offset
-                 (+ (funcall position err :end :offset))))
+                 (+ (funcall position err :end :offset)
+                    (if (eq 1 (funcall position err :start :line))
+                        (cdr redpen-paragraph-beginning-position) 0))))
             (insert (format
                      redpen-paragraph-input-pattern
                      (plist-get err :validator)
