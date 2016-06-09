@@ -25,56 +25,6 @@
   "Return target filename."
   (should (eq redpen-target-filename (redpen-target-filename))))
 
-(ert-deftest list-all-parameter-error ()
-  "List the all parameter error."
-  (with-temp-buffer
-    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
-          (validator "validator")
-          (startLineNum 1) (startOffset 2)
-          (endLineNum 4) (endOffset 5)
-          (message "message")
-          (sentence "sentence"))
-      (redpen-paragraph-list-errors
-       `((errors . [((validator . ,validator)
-                     (startPosition . ((lineNum . ,startLineNum)
-                                       (offset . ,startOffset)))
-                     (endPosition . ((lineNum . ,endLineNum)
-                                     (offset . , endOffset)))
-                     (message . ,message)
-                     (sentence . ,sentence))])))
-      (should
-       (equal
-        (concat (format redpen-paragraph-input-pattern
-                        validator
-                        startLineNum (1+ startOffset)
-                        endLineNum endOffset
-                        message)
-                sentence "\n\n")
-        (buffer-string))))))
-
-(ert-deftest list-sorted-errors ()
-  "List the sorted errors."
-  (with-temp-buffer
-    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
-          (startLineNum1 1) (startLineNum2 2) (startLineNum3 3))
-      (redpen-paragraph-list-errors
-       `((errors . [((lineNum . ,startLineNum2))
-                    ((lineNum . ,startLineNum3))
-                    ((lineNum . ,startLineNum1))])))
-      (should
-       (equal
-        (concat
-         (format redpen-paragraph-input-pattern
-                 "" startLineNum1 1 startLineNum1 1 "")
-         "\n"
-         (format redpen-paragraph-input-pattern
-                 "" startLineNum2 1 startLineNum2 1 "")
-         "\n"
-         (format redpen-paragraph-input-pattern
-                 "" startLineNum3 1 startLineNum3 1 "")
-         "\n")
-        (buffer-string))))))
-
 (require 'json)
 (ert-deftest read-the-process-stdout-as-json ()
   "Read the process stdout as JSON."
@@ -125,6 +75,30 @@
                  (buffer-string)))
         (should (eq (point) (point-min)))
         (should (eq major-mode 'compilation-mode))))))
+
+(ert-deftest list-errors-by-required-parameters ()
+  "List the all parameter error."
+  (with-temp-buffer
+    (let ((redpen-paragraph-compilation-buffer-name (current-buffer)))
+      (redpen-paragraph-list-errors
+       '(:errors
+         [(:sentence
+           "Sentence"
+           :errors
+           [(:validator
+             "Validator"
+             :message
+             "Message"
+             :position
+             (:start
+              (:line 0 :offset 1)
+              :end
+              (:line 3 :offset 4)))])]))
+      (should (equal
+               (concat
+                "Validator at start 1.2, end 3.4: Message\n"
+                "Sentence\n" "\n")
+               (buffer-string))))))
 
 (ert-deftest check-cursor-position ()
   "Check cursor position to paragraph."
