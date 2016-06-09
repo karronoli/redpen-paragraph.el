@@ -41,7 +41,7 @@
           (desc "dummy"))
       (sleep-for 1) ;; wait until exit of echo process.
       (redpen-paragraph-sentinel proc desc)))
-  (should t))
+  (should (equal "" (buffer-string))))
 
 (ert-deftest read-the-process-stdout-as-not-json ()
   "Read the process stdout as not JSON."
@@ -62,18 +62,16 @@
 (ert-deftest invoke-redpen-paragraph ()
   "Invoke redpen-paragraph."
   (with-temp-buffer
-    (let ((redpen-commands
+    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
+          (redpen-commands
            `(,(concat
                "echo "
                (shell-quote-argument
-                (json-encode '((errors . [()]))))))))
+                (json-encode '((errors . []))))))))
       (redpen-paragraph)
       (sleep-for 1) ;; wait until exit of echo process.
       (with-current-buffer redpen-paragraph-compilation-buffer-name
-        (should (equal
-                 " at start 1.1, end 1.1: \n\n"
-                 (buffer-string)))
-        (should (eq (point) (point-min)))
+        (should (equal "" (buffer-string)))
         (should (eq major-mode 'compilation-mode))))))
 
 (ert-deftest list-errors-by-required-parameters ()
