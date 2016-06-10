@@ -76,27 +76,33 @@
 
 (ert-deftest list-errors-by-required-parameters ()
   "List the all parameter error."
-  (with-temp-buffer
-    (let ((redpen-paragraph-compilation-buffer-name (current-buffer)))
-      (redpen-paragraph-list-errors
-       '(:errors
-         [(:sentence
-           "Sentence"
-           :errors
-           [(:validator
-             "Validator"
-             :message
-             "Message"
-             :position
-             (:start
-              (:line 0 :offset 1)
-              :end
-              (:line 3 :offset 4)))])]))
-      (should (equal
-               (concat
-                "Validator at start 1.2, end 3.4: Message\n"
-                "Sentence\n" "\n")
-               (buffer-string))))))
+  (let* ((redpen-server-response
+          '(:errors
+            [(:sentence
+              "Sentence"
+              :errors
+              [(:validator
+                "Validator"
+                :message
+                "Message"
+                :position
+                (:start
+                 (:line 0 :offset 1)
+                 :end
+                 (:line 3 :offset 4)))])]))
+         (redpen-cli-response (make-vector 1 redpen-server-response))
+         (expected-buffer-string
+          (concat
+           "Validator at start 1.2, end 3.4: Message\n"
+           "Sentence\n" "\n")))
+    (with-temp-buffer
+      (let ((redpen-paragraph-compilation-buffer-name (buffer-name)))
+        (redpen-paragraph-list-errors redpen-server-response)
+        (should (equal expected-buffer-string (buffer-string)))))
+    (with-temp-buffer
+      (let ((redpen-paragraph-compilation-buffer-name (buffer-name)))
+        (redpen-paragraph-list-errors redpen-cli-response)
+        (should (equal expected-buffer-string (buffer-string)))))))
 
 (ert-deftest check-cursor-position ()
   "Check cursor position to paragraph."

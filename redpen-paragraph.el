@@ -244,8 +244,10 @@ if FLAG is not nil, use second command in `redpen-commands'."
 
 (defun redpen-paragraph-list-errors (json)
   "Show the error list for the current buffer by RedPen."
-  (cl-assert (plist-get json :errors))
-  (cl-assert (vectorp (plist-get json :errors)))
+  ;; Require redpen-server response or repen cli response.
+  (cl-assert
+   (or (plist-get json :errors)
+       (and (vectorp json) (plist-get (elt json 0) :errors))))
 
   ;; Split window as well as usual compilation-mode.
   (switch-to-buffer-other-window (current-buffer))
@@ -291,7 +293,7 @@ if FLAG is not nil, use second command in `redpen-commands'."
                 (insert sentence "\n"))
             (insert "\n")))
         (plist-get errors :errors))))
-   (plist-get json :errors))
+   (or (plist-get json :errors) (plist-get (elt json 0) :errors)))
   ;; According to `redpen-paragraph-input-regexp',
   ;; Parse `redpen-paragraph-input-pattern' in `compilation-mode'.
   (compilation-mode)
