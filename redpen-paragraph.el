@@ -89,19 +89,40 @@
 
 (defvar redpen-commands
   ;; This setting is demo use only.
-  `(,(concat
-      "curl -s --data-urlencode document@%s"
-      " --data documentParser=PLAIN --data format=json"
-      " --data lang=en" ;; for english
-      ;; " --data-urlencode config@/path/to/redpen-conf-en.xml"
-      " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")
-    ,(concat
-      "curl -s --data-urlencode document@%s"
-      " --data documentParser=PLAIN --data format=json"
-      " --data lang=ja" ;; for not english
-      ;; " --data-urlencode config@/path/to/redpen-conf-ja.xml"
-      " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/"))
-  "Define redpen commands. 1st is for english, 2nd is for other language.")
+  (cond
+   ((or (locate-file "curl" exec-path)
+        (locate-file "curl.exe" exec-path))
+    `(,(concat
+        "curl -s --data-urlencode document@%s"
+        " --data format=json2 --data lang=en" ;; for english
+        ;; " --data-urlencode config@/path/to/redpen-conf-en.xml"
+        " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")
+      ,(concat
+        "curl -s --data-urlencode document@%s"
+        " --data format=json2 --data lang=ja" ;; for not english
+        ;; " --data-urlencode config@/path/to/redpen-conf-ja.xml"
+        " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")))
+   ((and (eq system-type 'windows-nt)
+         (locate-file "powershell.exe" exec-path))
+    `(,(concat
+        "chcp 65001>NUL & powershell -Command \"& {"
+        "(Invoke-WebRequest -Uri"
+        " 'http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/'"
+        " -Method Post -Body @{"
+        "  lang = 'en'; format = 'json2';"
+        "  document = (Get-Content -Raw '%s' -Encoding UTF8)}"
+        ").Content}\"")
+      ,(concat
+        "chcp 65001>NUL & powershell -Command \"& {"
+        "(Invoke-WebRequest -Uri"
+        " 'http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/'"
+        " -Method Post -Body @{"
+        "  lang = 'ja'; format = 'json2';"
+        "  document = (Get-Content -Raw '%s' -Encoding UTF8)}"
+        ").Content}\""))))
+  "Define redpen commands.
+
+1st is for english, 2nd is for other language.")
 
 (defvar redpen-paragraph-force-english nil
   "Force English without detecting.")
@@ -115,18 +136,18 @@
 (defvar redpen-temporary-filename
   (expand-file-name
    (format "redpen.%s" (emacs-pid)) temporary-file-directory)
-  "Filename passed to rendpen.")
+  "Filename passed to rendpen(internal use).")
 
 (defvar redpen-target-filename ""
-  "Editing filename.")
+  "Editing filename(internal use).")
 
 (defvar redpen-paragraph-compilation-buffer-name
   "*compilation*" "Compilation buffer name.")
 
 (defvar redpen-paragraph-beginning-position
-  '(0 . 0) "Position of the paragraph beginning. (lineNum . offset)")
+  '(0 . 0) "Position of the paragraph beginning(internal use).")
 
-;; eg. 1:1:1:1: ValidationError[StartWithCapitalLetter], Sentence starts with a lowercase character "t". at line: test
+;; eg. DoubledWord at start 1.57, end 1.59: Found repeated word "for".
 (defvar redpen-paragraph-input-pattern
   "%s at start %d.%d, end %d.%d: %s\n"
   "Adjust to suit the input regexp.")
@@ -135,10 +156,10 @@
   "Adjust to suit the input pattern.
 
 regexp capture & bind list
-1st: lineNum | startPosition.lineNum
-2nd: lineNum | endPosition.lineNum
-3rd: 1 | startPosition.offset
-4th: 1 | endPosition.offset")
+1st: errors[0].errors[i].position.start.line
+2nd: errors[0].errors[i].position.start.offset
+3rd: errors[0].errors[i].position.end.line
+4th: errors[0].errors[i].position.end.offset")
 
 (autoload 'org-backward-paragraph "org")
 (autoload 'org-forward-paragraph "org")
@@ -159,11 +180,13 @@ regexp capture & bind list
 
 (defun redpen-paragraph-is-english (text)
   "Detect language by TEXT."
-  (let* ((full (length text))
-         (not-english
-          (length (replace-regexp-in-string "[\x21-\x7e]" "" text)))
-         (english (- full not-english)))
-    (> english not-english)))
+  (cl-assert (stringp text))
+  (if (eq (length text) 0) t
+    (let* ((full (length text))
+           (not-english
+            (length (replace-regexp-in-string "[\x21-\x7e]" "" text)))
+           (english (- full not-english)))
+      (> english not-english))))
 
 ;;;###autoload
 (defun redpen-paragraph (&optional flag)
@@ -200,13 +223,20 @@ if FLAG is not nil, use second command in `redpen-commands'."
                     (current-column)))))
     (with-current-buffer
         (get-buffer-create redpen-paragraph-compilation-buffer-name)
+      ;; if compilation-mode have activated,
+      ;; Deactivate it by command output.
       (async-shell-command command (current-buffer))
       (set-process-sentinel
        (get-buffer-process (current-buffer))
        'redpen-paragraph-sentinel))))
 
 (defun redpen-paragraph-sentinel (proc desc)
-  "Sentinel for redpen-paragraph compilation buffers."
+  "Sentinel for redpen-paragraph compilation buffers.
+
+PROC is a RedPen asynchronous process.
+DESC is status of the process."
+  (cl-assert (processp proc))
+  (cl-assert (stringp desc))
   (message "Compilation %s at %s"
            (replace-regexp-in-string "\n?$" "" desc)
            (substring (current-time-string) 0 19))
@@ -214,58 +244,64 @@ if FLAG is not nil, use second command in `redpen-commands'."
       (with-current-buffer
           redpen-paragraph-compilation-buffer-name
         ;; Erase for showing the errors after reading the raw result.
-        (let ((json (json-read-from-string (buffer-string))))
+        (let* ((json-object-type 'plist)
+               (json (json-read-from-string (buffer-string))))
           (erase-buffer)
           (redpen-paragraph-list-errors json)))))
 
 (defun redpen-paragraph-list-errors (json)
-  "Show the error list for the current buffer by RedPen."
+  "Show the error list for the current buffer by RedPen.
+
+JSON is redpen-server response or repen cli response."
+  (cl-assert
+   (or (plist-get json :errors)
+       (and (vectorp json) (plist-get (elt json 0) :errors))))
+
   ;; Split window as well as usual compilation-mode.
   (switch-to-buffer-other-window (current-buffer))
   (set-buffer redpen-paragraph-compilation-buffer-name)
   (mapc
-   (lambda (err)
-     (let* ((validator (or (cdr (assoc 'validator err)) ""))
-            (message (or (cdr (assoc 'message err)) ""))
-            (sentence (or (cdr (assoc 'sentence err)) ""))
-            ;; lineNum is still used on RedPen
-            (lineNum (or (cdr (assoc 'lineNum err)) 0))
-            (start-pos (cdr (assoc 'startPosition err)))
-            (start-lineNum
-             (+ (car redpen-paragraph-beginning-position)
-                (or (cdr (assoc 'lineNum start-pos))
-                    lineNum)))
-            (start-offset
-             (+ 1 (cdr redpen-paragraph-beginning-position)
-                (or (cdr (assoc 'offset start-pos))
-                    ;; sentenceStartColumnNum is still used on RedPen
-                    (if (assoc 'sentenceStartColumnNum err)
-                        (1+ (cdr (assoc 'sentenceStartColumnNum err))))
-                    0)))
-            (end-pos (cdr (assoc 'endPosition err)))
-            (end-lineNum
-             (+ (car redpen-paragraph-beginning-position)
-                (or (cdr (assoc 'lineNum end-pos))
-                    lineNum)))
-            (end-offset
-             (+ (cdr redpen-paragraph-beginning-position)
-                (or (cdr (assoc 'offset end-pos)) 0))))
-       (insert (format
-                redpen-paragraph-input-pattern
-                validator
-                ;; Emacs displays from the 1st line.
-                (if (eq start-lineNum 0) 1 start-lineNum)
-                start-offset
-                (if (eq end-lineNum 0) 1 end-lineNum)
-                (if (> start-offset end-offset) start-offset end-offset)
-                message))
-       (if (> (length sentence) 0)
-           (insert sentence "\n"))
-       (insert "\n")))
-   (cl-sort
-    (cdr (assoc 'errors json))
-    (lambda (a b)
-      (< (cdr (assoc 'lineNum a)) (cdr (assoc 'lineNum b))))))
+   (lambda (errors)
+     (let ((sentence (plist-get errors :sentence))
+           (position (lambda (root k1 k2)
+                       (plist-get
+                        (plist-get
+                         (plist-get root :position) k1) k2))))
+       (mapc
+        (lambda (err)
+          (let (;; Emacs displays from the 1st line.
+                (start-line
+                 (max
+                  (+ (car redpen-paragraph-beginning-position)
+                     (funcall position err :start :line))
+                  1))
+                (end-line
+                 (max
+                  (+ (car redpen-paragraph-beginning-position)
+                     (funcall position err :end :line))
+                  1))
+                ;; Add cursor offset to RedPen offset only in the 1st line
+                (start-offset
+                 (+ 1 (funcall position err :start :offset)
+                    (if (eq 1 (funcall position err :start :line))
+                        (cdr redpen-paragraph-beginning-position) 0)))
+                (end-offset
+                 (+ (funcall position err :end :offset)
+                    (if (eq 1 (funcall position err :start :line))
+                        (cdr redpen-paragraph-beginning-position) 0))))
+            (insert (format
+                     redpen-paragraph-input-pattern
+                     (plist-get err :validator)
+                     start-line start-offset end-line
+                     (if (and (eq start-line end-line)
+                              (> start-offset end-offset))
+                         start-offset end-offset)
+                     (plist-get err :message)))
+            (if (> (length sentence) 0)
+                (insert sentence "\n"))
+            (insert "\n")))
+        (plist-get errors :errors))))
+   (or (plist-get json :errors) (plist-get (elt json 0) :errors)))
   ;; According to `redpen-paragraph-input-regexp',
   ;; Parse `redpen-paragraph-input-pattern' in `compilation-mode'.
   (compilation-mode)

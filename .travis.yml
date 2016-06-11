@@ -1,0 +1,29 @@
+language: generic
+
+sudo: false
+
+addons:
+  apt:
+    sources:
+    - cassou-emacs
+    packages:
+    - emacs24
+
+env:
+  matrix:
+    - EMACS=emacs24
+
+before_install:
+  - git clone https://github.com/cask/cask.git "$HOME/.cask"
+  - export PATH="$HOME/.cask/bin:$PATH"
+install:
+  - cask install
+script:
+  - cask exec ert-runner
+notifications:
+  slack:
+    secure: nVVpA614YhpYoBU5vhFMLczqegWZ3PaxOsDXUlWVtOmaN6+MaPzQP57th6AROMTgyye0dhwjp3c3IIfFG1cu/0sqcdo27YsqBAVVJnyoOXP941kO2x6mGvegHWUJqIVnXo/tUwTodwP1n7pF/TWrbngGHzeSnUAsQ0M6KiAqPE8ZwZI/X9HrpLNt+sEcBEDZKrxtBKZBsT1T+qQVdbd3+aiEedlze4fRLZubK8dVTYPT1G5QInMfw3a0bqkdX+iUwGG+4pJ4tEuc35QAW3fYtCGiyJggiXHOhD1PFvPwk4aVpAflKFLf51pnUeLOHVQNrHvlDPD8t1ER+l6gxANzqg5yJdZl6bSTMApoQjYVtC0KK3YBaiyB5d58q3BtgKFY9Xpy4cU/jC5jRQGj9ht0IjzV4nYgCSDXyGsRXSKfsNoY69wdxME/rE+0uIxHjRQ3YViOyXzaK0B4B3LNjjkRXiqlBGdIwLE3ezP36M4v6zpFT2Dmhe+pwFyad+SE/pze3X3OOOyAHJImuhO5zrTcqFVUNkkNkOyMco48++qKmuu9pRSFMNbDhw4LDTH23r+08gWlbOagwFtJs0G+JrfbMKGyft9V/sO6FT0nFj/0tYzqoZKdVv1NaKxv2Du6tv3DpDBwVOhn2zGtv+89l810pYBq+QtcavkWY9qxd8gk/AQ=
+
+# Local Variables:
+# coding: utf-8
+# End:
