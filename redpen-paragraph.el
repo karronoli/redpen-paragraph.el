@@ -94,12 +94,12 @@
         (locate-file "curl.exe" exec-path))
     `(,(concat
         "curl -s --data-urlencode document@%s"
-        " --data format=json --data lang=en" ;; for english
+        " --data format=json2 --data lang=en" ;; for english
         ;; " --data-urlencode config@/path/to/redpen-conf-en.xml"
         " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")
       ,(concat
         "curl -s --data-urlencode document@%s"
-        " --data format=json --data lang=ja" ;; for not english
+        " --data format=json2 --data lang=ja" ;; for not english
         ;; " --data-urlencode config@/path/to/redpen-conf-ja.xml"
         " http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/")))
    ((and (eq system-type 'windows-nt)
@@ -109,7 +109,7 @@
         "(Invoke-WebRequest -Uri"
         " 'http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/'"
         " -Method Post -Body @{"
-        "  lang = 'en'; format = 'json';"
+        "  lang = 'en'; format = 'json2';"
         "  document = (Get-Content -Raw '%s' -Encoding UTF8)}"
         ").Content}\"")
       ,(concat
@@ -117,7 +117,7 @@
         "(Invoke-WebRequest -Uri"
         " 'http://redpen-paragraph-demo.herokuapp.com/rest/document/validate/'"
         " -Method Post -Body @{"
-        "  lang = 'ja'; format = 'json';"
+        "  lang = 'ja'; format = 'json2';"
         "  document = (Get-Content -Raw '%s' -Encoding UTF8)}"
         ").Content}\""))))
   "Define redpen commands. 1st is for english, 2nd is for other language.")
@@ -237,61 +237,63 @@ if FLAG is not nil, use second command in `redpen-commands'."
       (with-current-buffer
           redpen-paragraph-compilation-buffer-name
         ;; Erase for showing the errors after reading the raw result.
-        (let ((json (json-read-from-string (buffer-string))))
+        (let* ((json-object-type 'plist)
+               (json (json-read-from-string (buffer-string))))
           (erase-buffer)
           (redpen-paragraph-list-errors json)))))
 
 (defun redpen-paragraph-list-errors (json)
   "Show the error list for the current buffer by RedPen."
-  (cl-assert (assoc 'errors json))
-  (cl-assert (vectorp (cdr (assoc 'errors json))))
+  ;; Require redpen-server response or repen cli response.
+  (cl-assert
+   (or (plist-get json :errors)
+       (and (vectorp json) (plist-get (elt json 0) :errors))))
 
   ;; Split window as well as usual compilation-mode.
   (switch-to-buffer-other-window (current-buffer))
   (set-buffer redpen-paragraph-compilation-buffer-name)
   (mapc
-   (lambda (err)
-     (let* ((validator (or (cdr (assoc 'validator err)) ""))
-            (message (or (cdr (assoc 'message err)) ""))
-            (sentence (or (cdr (assoc 'sentence err)) ""))
-            ;; lineNum is still used on RedPen
-            (lineNum (or (cdr (assoc 'lineNum err)) 0))
-            (start-pos (cdr (assoc 'startPosition err)))
-            (start-lineNum
-             (+ (car redpen-paragraph-beginning-position)
-                (or (cdr (assoc 'lineNum start-pos))
-                    lineNum)))
-            (start-offset
-             (+ 1 (cdr redpen-paragraph-beginning-position)
-                (or (cdr (assoc 'offset start-pos))
-                    ;; sentenceStartColumnNum is still used on RedPen
-                    (if (assoc 'sentenceStartColumnNum err)
-                        (1+ (cdr (assoc 'sentenceStartColumnNum err))))
-                    0)))
-            (end-pos (cdr (assoc 'endPosition err)))
-            (end-lineNum
-             (+ (car redpen-paragraph-beginning-position)
-                (or (cdr (assoc 'lineNum end-pos))
-                    lineNum)))
-            (end-offset
-             (+ (cdr redpen-paragraph-beginning-position)
-                (or (cdr (assoc 'offset end-pos)) 0))))
-       (insert (format
-                redpen-paragraph-input-pattern
-                validator
-                ;; Emacs displays from the 1st line.
-                (if (eq start-lineNum 0) 1 start-lineNum)
-                start-offset
-                (if (eq end-lineNum 0) 1 end-lineNum)
-                (if (> start-offset end-offset) start-offset end-offset)
-                message))
-       (if (> (length sentence) 0)
-           (insert sentence "\n"))
-       (insert "\n")))
-   (cl-sort
-    (cdr (assoc 'errors json))
-    (lambda (a b)
-      (< (cdr (assoc 'lineNum a)) (cdr (assoc 'lineNum b))))))
+   (lambda (errors)
+     (let ((sentence (plist-get errors :sentence))
+           (position (lambda (root k1 k2)
+                       (plist-get
+                        (plist-get
+                         (plist-get root :position) k1) k2))))
+       (mapc
+        (lambda (err)
+          (let (;; Emacs displays from the 1st line.
+                (start-line
+                 (max
+                  (+ (car redpen-paragraph-beginning-position)
+                     (funcall position err :start :line))
+                  1))
+                (end-line
+                 (max
+                  (+ (car redpen-paragraph-beginning-position)
+                     (funcall position err :end :line))
+                  1))
+                ;; Add cursor offset to RedPen offset only in the 1st line
+                (start-offset
+                 (+ 1 (funcall position err :start :offset)
+                    (if (eq 1 (funcall position err :start :line))
+                        (cdr redpen-paragraph-beginning-position) 0)))
+                (end-offset
+                 (+ (funcall position err :end :offset)
+                    (if (eq 1 (funcall position err :start :line))
+                        (cdr redpen-paragraph-beginning-position) 0))))
+            (insert (format
+                     redpen-paragraph-input-pattern
+                     (plist-get err :validator)
+                     start-line start-offset end-line
+                     (if (and (eq start-line end-line)
+                              (> start-offset end-offset))
+                         start-offset end-offset)
+                     (plist-get err :message)))
+            (if (> (length sentence) 0)
+                (insert sentence "\n"))
+            (insert "\n")))
+        (plist-get errors :errors))))
+   (or (plist-get json :errors) (plist-get (elt json 0) :errors)))
   ;; According to `redpen-paragraph-input-regexp',
   ;; Parse `redpen-paragraph-input-pattern' in `compilation-mode'.
   (compilation-mode)

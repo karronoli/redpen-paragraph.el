@@ -25,56 +25,6 @@
   "Return target filename."
   (should (eq redpen-target-filename (redpen-target-filename))))
 
-(ert-deftest list-all-parameter-error ()
-  "List the all parameter error."
-  (with-temp-buffer
-    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
-          (validator "validator")
-          (startLineNum 1) (startOffset 2)
-          (endLineNum 4) (endOffset 5)
-          (message "message")
-          (sentence "sentence"))
-      (redpen-paragraph-list-errors
-       `((errors . [((validator . ,validator)
-                     (startPosition . ((lineNum . ,startLineNum)
-                                       (offset . ,startOffset)))
-                     (endPosition . ((lineNum . ,endLineNum)
-                                     (offset . , endOffset)))
-                     (message . ,message)
-                     (sentence . ,sentence))])))
-      (should
-       (equal
-        (concat (format redpen-paragraph-input-pattern
-                        validator
-                        startLineNum (1+ startOffset)
-                        endLineNum endOffset
-                        message)
-                sentence "\n\n")
-        (buffer-string))))))
-
-(ert-deftest list-sorted-errors ()
-  "List the sorted errors."
-  (with-temp-buffer
-    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
-          (startLineNum1 1) (startLineNum2 2) (startLineNum3 3))
-      (redpen-paragraph-list-errors
-       `((errors . [((lineNum . ,startLineNum2))
-                    ((lineNum . ,startLineNum3))
-                    ((lineNum . ,startLineNum1))])))
-      (should
-       (equal
-        (concat
-         (format redpen-paragraph-input-pattern
-                 "" startLineNum1 1 startLineNum1 1 "")
-         "\n"
-         (format redpen-paragraph-input-pattern
-                 "" startLineNum2 1 startLineNum2 1 "")
-         "\n"
-         (format redpen-paragraph-input-pattern
-                 "" startLineNum3 1 startLineNum3 1 "")
-         "\n")
-        (buffer-string))))))
-
 (require 'json)
 (ert-deftest read-the-process-stdout-as-json ()
   "Read the process stdout as JSON."
@@ -91,7 +41,7 @@
           (desc "dummy"))
       (sleep-for 1) ;; wait until exit of echo process.
       (redpen-paragraph-sentinel proc desc)))
-  (should t))
+  (should (equal "" (buffer-string))))
 
 (ert-deftest read-the-process-stdout-as-not-json ()
   "Read the process stdout as not JSON."
@@ -112,19 +62,47 @@
 (ert-deftest invoke-redpen-paragraph ()
   "Invoke redpen-paragraph."
   (with-temp-buffer
-    (let ((redpen-commands
+    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
+          (redpen-commands
            `(,(concat
                "echo "
                (shell-quote-argument
-                (json-encode '((errors . [()]))))))))
+                (json-encode '((errors . []))))))))
       (redpen-paragraph)
       (sleep-for 1) ;; wait until exit of echo process.
       (with-current-buffer redpen-paragraph-compilation-buffer-name
-        (should (equal
-                 " at start 1.1, end 1.1: \n\n"
-                 (buffer-string)))
-        (should (eq (point) (point-min)))
+        (should (equal "" (buffer-string)))
         (should (eq major-mode 'compilation-mode))))))
+
+(ert-deftest list-errors-by-required-parameters ()
+  "List the all parameter error."
+  (let* ((redpen-server-response
+          '(:errors
+            [(:sentence
+              "Sentence"
+              :errors
+              [(:validator
+                "Validator"
+                :message
+                "Message"
+                :position
+                (:start
+                 (:line 0 :offset 1)
+                 :end
+                 (:line 3 :offset 4)))])]))
+         (redpen-cli-response (make-vector 1 redpen-server-response))
+         (expected-buffer-string
+          (concat
+           "Validator at start 1.2, end 3.4: Message\n"
+           "Sentence\n" "\n")))
+    (with-temp-buffer
+      (let ((redpen-paragraph-compilation-buffer-name (buffer-name)))
+        (redpen-paragraph-list-errors redpen-server-response)
+        (should (equal expected-buffer-string (buffer-string)))))
+    (with-temp-buffer
+      (let ((redpen-paragraph-compilation-buffer-name (buffer-name)))
+        (redpen-paragraph-list-errors redpen-cli-response)
+        (should (equal expected-buffer-string (buffer-string)))))))
 
 (ert-deftest check-cursor-position ()
   "Check cursor position to paragraph."
