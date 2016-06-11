@@ -2,8 +2,6 @@
 
 ;;; Commentary:
 ;; test for redpen-paragraph by ert
-;; $ emacs -Q -batch --directory ~/.emacs.d -l redpen-paragraph-test.el \
-;;     -f ert-run-tests-batch-and-exit
 
 (require 'ert)
 (require 'redpen-paragraph)
@@ -25,11 +23,10 @@
   "Return target filename."
   (should (eq redpen-target-filename (redpen-target-filename))))
 
-(require 'json)
 (ert-deftest read-the-process-stdout-as-json ()
   "Read the process stdout as JSON."
   (with-temp-buffer
-    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
+    (let ((redpen-paragraph-compilation-buffer-name (buffer-name))
           (proc
            (progn
              (async-shell-command
@@ -46,7 +43,7 @@
 (ert-deftest read-the-process-stdout-as-not-json ()
   "Read the process stdout as not JSON."
   (with-temp-buffer
-    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
+    (let ((redpen-paragraph-compilation-buffer-name (buffer-name))
           (proc
            (progn
              (async-shell-command

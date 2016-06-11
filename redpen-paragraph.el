@@ -120,7 +120,9 @@
         "  lang = 'ja'; format = 'json2';"
         "  document = (Get-Content -Raw '%s' -Encoding UTF8)}"
         ").Content}\""))))
-  "Define redpen commands. 1st is for english, 2nd is for other language.")
+  "Define redpen commands.
+
+1st is for english, 2nd is for other language.")
 
 (defvar redpen-paragraph-force-english nil
   "Force English without detecting.")
@@ -134,18 +136,18 @@
 (defvar redpen-temporary-filename
   (expand-file-name
    (format "redpen.%s" (emacs-pid)) temporary-file-directory)
-  "Filename passed to rendpen.")
+  "Filename passed to rendpen(internal use).")
 
 (defvar redpen-target-filename ""
-  "Editing filename.")
+  "Editing filename(internal use).")
 
 (defvar redpen-paragraph-compilation-buffer-name
   "*compilation*" "Compilation buffer name.")
 
 (defvar redpen-paragraph-beginning-position
-  '(0 . 0) "Position of the paragraph beginning. (lineNum . offset)")
+  '(0 . 0) "Position of the paragraph beginning(internal use).")
 
-;; eg. 1:1:1:1: ValidationError[StartWithCapitalLetter], Sentence starts with a lowercase character "t". at line: test
+;; eg. DoubledWord at start 1.57, end 1.59: Found repeated word "for".
 (defvar redpen-paragraph-input-pattern
   "%s at start %d.%d, end %d.%d: %s\n"
   "Adjust to suit the input regexp.")
@@ -154,10 +156,10 @@
   "Adjust to suit the input pattern.
 
 regexp capture & bind list
-1st: lineNum | startPosition.lineNum
-2nd: lineNum | endPosition.lineNum
-3rd: 1 | startPosition.offset
-4th: 1 | endPosition.offset")
+1st: errors[0].errors[i].position.start.line
+2nd: errors[0].errors[i].position.start.offset
+3rd: errors[0].errors[i].position.end.line
+4th: errors[0].errors[i].position.end.offset")
 
 (autoload 'org-backward-paragraph "org")
 (autoload 'org-forward-paragraph "org")
@@ -221,13 +223,18 @@ if FLAG is not nil, use second command in `redpen-commands'."
                     (current-column)))))
     (with-current-buffer
         (get-buffer-create redpen-paragraph-compilation-buffer-name)
+      ;; if compilation-mode have activated,
+      ;; Deactivate it by command output.
       (async-shell-command command (current-buffer))
       (set-process-sentinel
        (get-buffer-process (current-buffer))
        'redpen-paragraph-sentinel))))
 
 (defun redpen-paragraph-sentinel (proc desc)
-  "Sentinel for redpen-paragraph compilation buffers."
+  "Sentinel for redpen-paragraph compilation buffers.
+
+PROC is a RedPen asynchronous process.
+DESC is status of the process."
   (cl-assert (processp proc))
   (cl-assert (stringp desc))
   (message "Compilation %s at %s"
@@ -243,8 +250,9 @@ if FLAG is not nil, use second command in `redpen-commands'."
           (redpen-paragraph-list-errors json)))))
 
 (defun redpen-paragraph-list-errors (json)
-  "Show the error list for the current buffer by RedPen."
-  ;; Require redpen-server response or repen cli response.
+  "Show the error list for the current buffer by RedPen.
+
+JSON is redpen-server response or repen cli response."
   (cl-assert
    (or (plist-get json :errors)
        (and (vectorp json) (plist-get (elt json 0) :errors))))
