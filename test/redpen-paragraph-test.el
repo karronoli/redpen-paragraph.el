@@ -110,23 +110,24 @@
                "echo "
                (shell-quote-argument
                 (json-encode '((errors . [])))))))
-          ;; lineNum position-on-the-line expected-result
-          (tests '((1 nil "test1\n") (1 'end "test1\n")
-                   (2 nil "\ntest2\n")
-                   (3 nil "\ntest2\n") (3 'end "\ntest2\n")
-                   (4 nil "\ntest3")
-                   (5 nil "\ntest3") (5 'end "\ntest3"))))
+          (tests '((1 nil "test1\n" (0 . 0)) (1 t "test1\n" (0 . 0))
+                   (2 nil "\ntest2\n" (1 . 0))
+                   (3 nil "\ntest2\n" (1 . 0)) (3 t "\ntest2\n" (1 . 0))
+                   (4 nil "\ntest3" (3 . 0))
+                   (5 nil "\ntest3" (3 . 0)) (5 t "\ntest3" (3 . 0)))))
       (mapc
        (lambda (test)
-         (cl-destructuring-bind (lineNum position expected) test
+         (cl-destructuring-bind (line end? buffer beginning-position) test
            (goto-char (point-min))
-           (if (> lineNum 1) (forward-line (1- lineNum)))
-           (if (eq position 'end) (move-end-of-line 1))
+           (if (> line 1) (forward-line (1- line)))
+           (if end? (move-end-of-line 1))
            (redpen-paragraph)
            (sleep-for 1) ;; wait until exit of echo process.
+           (should (equal beginning-position
+                          redpen-paragraph-beginning-position))
            (with-current-buffer
                (find-file-noselect redpen-temporary-filename)
-             (should (equal expected (buffer-string))))
+             (should (equal buffer (buffer-string))))
            (kill-buffer
             (find-file-noselect redpen-temporary-filename))))
        tests)
@@ -136,6 +137,8 @@
       (let ((transient-mark-mode t))
         (redpen-paragraph))
       (sleep-for 1) ;; wait until exit of echo process.
+      (should (equal '(0 . 0)
+                     redpen-paragraph-beginning-position))
       (with-current-buffer
           (find-file-noselect redpen-temporary-filename)
         (should
