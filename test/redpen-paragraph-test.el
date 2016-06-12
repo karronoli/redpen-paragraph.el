@@ -64,11 +64,28 @@
            `(,(concat
                "echo "
                (shell-quote-argument
-                (json-encode '((errors . []))))))))
+                (json-encode
+                 '(:errors
+                   [(:sentence
+                     "Sentence"
+                     :errors
+                     [(:validator
+                       "Validator"
+                       :message
+                       "Message"
+                       :position
+                       (:start
+                        (:line 2 :offset 3)
+                        :end
+                        (:line 5 :offset 6)))])]))))))
+          (expected-buffer-string
+           (concat
+            "Validator at start 2.4, end 5.6: Message\n"
+            "Sentence\n" "\n")))
       (redpen-paragraph)
       (sleep-for 1) ;; wait until exit of echo process.
       (with-current-buffer redpen-paragraph-compilation-buffer-name
-        (should (equal "" (buffer-string)))
+        (should (equal expected-buffer-string (buffer-string)))
         (should (eq major-mode 'compilation-mode))))))
 
 (ert-deftest list-errors-by-required-parameters ()
@@ -84,13 +101,13 @@
                 "Message"
                 :position
                 (:start
-                 (:line 0 :offset 1)
+                 (:line 0 :offset 0)
                  :end
-                 (:line 3 :offset 4)))])]))
+                 (:line 0 :offset 0)))])]))
          (redpen-cli-response (make-vector 1 redpen-server-response))
          (expected-buffer-string
           (concat
-           "Validator at start 1.2, end 3.4: Message\n"
+           "Validator at start 1.1, end 1.1: Message\n"
            "Sentence\n" "\n")))
     (with-temp-buffer
       (let ((redpen-paragraph-compilation-buffer-name (buffer-name)))
