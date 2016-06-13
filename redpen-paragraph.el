@@ -217,8 +217,8 @@ if FLAG is not nil, use second command in `redpen-commands'."
     (setq redpen-paragraph-beginning-position
           (if is-whole '(0 . 0)
             (save-excursion
-              (if (use-region-p) (goto-char (region-beginning))
-                (backward-paragraph))
+              (unless (use-region-p) (mark-paragraph))
+              (goto-char (region-beginning))
               (cons (1- (line-number-at-pos))
                     (current-column)))))
     (with-current-buffer

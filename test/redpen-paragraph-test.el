@@ -58,18 +58,42 @@
 
 (ert-deftest invoke-redpen-paragraph ()
   "Invoke redpen-paragraph."
-  (with-temp-buffer
-    (let ((redpen-paragraph-compilation-buffer-name (current-buffer))
-          (redpen-commands
-           `(,(concat
-               "echo "
-               (shell-quote-argument
-                (json-encode '((errors . []))))))))
-      (redpen-paragraph)
-      (sleep-for 1) ;; wait until exit of echo process.
-      (with-current-buffer redpen-paragraph-compilation-buffer-name
-        (should (equal "" (buffer-string)))
-        (should (eq major-mode 'compilation-mode))))))
+  (let ((redpen-commands
+         `(,(concat
+             "echo "
+             (shell-quote-argument
+              (json-encode
+               '(:errors
+                 [(:sentence
+                   "Sentence"
+                   :errors
+                   [(:validator
+                     "Validator"
+                     :message
+                     "Message"
+                     :position
+                     (:start
+                      (:line 2 :offset 3)
+                      :end
+                      (:line 5 :offset 6)))])]))))))
+        (expected-buffer-string
+         (concat
+          "Validator at start 2.4, end 5.6: Message\n"
+          "Sentence\n" "\n")))
+    (with-temp-buffer
+      (let ((redpen-paragraph-compilation-buffer-name (buffer-name)))
+        (redpen-paragraph)
+        (sleep-for 1) ;; wait until exit of echo process.
+        (should (equal expected-buffer-string (buffer-string)))
+        (should (eq major-mode 'compilation-mode))))
+    (kill-buffer (get-file-buffer redpen-temporary-filename))
+    (with-temp-buffer
+      (let ((redpen-paragraph-compilation-buffer-name (buffer-name)))
+        (redpen-paragraph 4) ;; call with C-u
+        (sleep-for 1) ;; wait until exit of echo process.
+        (should (equal expected-buffer-string (buffer-string)))
+        (should (eq major-mode 'compilation-mode))))
+    (kill-buffer (get-file-buffer redpen-temporary-filename))))
 
 (ert-deftest list-errors-by-required-parameters ()
   "List the all parameter error."
@@ -84,13 +108,13 @@
                 "Message"
                 :position
                 (:start
-                 (:line 0 :offset 1)
+                 (:line 1 :offset 0)
                  :end
-                 (:line 3 :offset 4)))])]))
+                 (:line 1 :offset 0)))])]))
          (redpen-cli-response (make-vector 1 redpen-server-response))
          (expected-buffer-string
           (concat
-           "Validator at start 1.2, end 3.4: Message\n"
+           "Validator at start 1.1, end 1.1: Message\n"
            "Sentence\n" "\n")))
     (with-temp-buffer
       (let ((redpen-paragraph-compilation-buffer-name (buffer-name)))
@@ -110,25 +134,25 @@
                "echo "
                (shell-quote-argument
                 (json-encode '((errors . [])))))))
-          ;; lineNum position-on-the-line expected-result
-          (tests '((1 nil "test1\n") (1 'end "test1\n")
-                   (2 nil "\ntest2\n")
-                   (3 nil "\ntest2\n") (3 'end "\ntest2\n")
-                   (4 nil "\ntest3")
-                   (5 nil "\ntest3") (5 'end "\ntest3"))))
+          (tests '((1 nil "test1\n" (0 . 0)) (1 t "test1\n" (0 . 0))
+                   (2 nil "\ntest2\n" (1 . 0))
+                   (3 nil "\ntest2\n" (1 . 0)) (3 t "\ntest2\n" (1 . 0))
+                   (4 nil "\ntest3" (3 . 0))
+                   (5 nil "\ntest3" (3 . 0)) (5 t "\ntest3" (3 . 0)))))
       (mapc
        (lambda (test)
-         (cl-destructuring-bind (lineNum position expected) test
+         (cl-destructuring-bind (line end? buffer beginning-position) test
            (goto-char (point-min))
-           (if (> lineNum 1) (forward-line (1- lineNum)))
-           (if (eq position 'end) (move-end-of-line 1))
+           (if (> line 1) (forward-line (1- line)))
+           (if end? (move-end-of-line 1))
            (redpen-paragraph)
            (sleep-for 1) ;; wait until exit of echo process.
+           (should (equal beginning-position
+                          redpen-paragraph-beginning-position))
            (with-current-buffer
                (find-file-noselect redpen-temporary-filename)
-             (should (equal expected (buffer-string))))
-           (kill-buffer
-            (find-file-noselect redpen-temporary-filename))))
+             (should (equal buffer (buffer-string))))
+           (kill-buffer (get-file-buffer redpen-temporary-filename))))
        tests)
 
       (mark-whole-buffer)
@@ -136,6 +160,8 @@
       (let ((transient-mark-mode t))
         (redpen-paragraph))
       (sleep-for 1) ;; wait until exit of echo process.
+      (should (equal '(0 . 0)
+                     redpen-paragraph-beginning-position))
       (with-current-buffer
           (find-file-noselect redpen-temporary-filename)
         (should
