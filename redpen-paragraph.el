@@ -3,8 +3,8 @@
 ;; Copyright (C) 2015 karronoli
 
 ;; Author:  karronoli
-;; Created: 2016/05/09
-;; Version: 0.4
+;; Created: 2016/06/13
+;; Version: 0.42
 ;; Keywords: document, proofreading, help
 ;; X-URL: https://github.com/karronoli/redpen-paragraph.el
 ;; Package-Requires: ((emacs "24") (cl-lib "0.5") (json "1.4"))
