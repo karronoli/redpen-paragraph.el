@@ -135,10 +135,10 @@
                (shell-quote-argument
                 (json-encode '((errors . [])))))))
           (tests '((1 nil "test1\n" (0 . 0)) (1 t "test1\n" (0 . 0))
-                   (2 nil "\ntest2\n" (1 . 0))
-                   (3 nil "\ntest2\n" (1 . 0)) (3 t "\ntest2\n" (1 . 0))
-                   (4 nil "\ntest3" (3 . 0))
-                   (5 nil "\ntest3" (3 . 0)) (5 t "\ntest3" (3 . 0)))))
+                   (2 nil "test2\n" (2 . 0))
+                   (3 nil "test2\n" (2 . 0)) (3 t "test2\n" (2 . 0))
+                   (4 nil "test3" (4 . 0))
+                   (5 nil "test3" (4 . 0)) (5 t "test3" (4 . 0)))))
       (mapc
        (lambda (test)
          (cl-destructuring-bind (line end? buffer beginning-position) test
