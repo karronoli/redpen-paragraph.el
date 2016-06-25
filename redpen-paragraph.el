@@ -203,8 +203,10 @@ if FLAG is not nil, use second command in `redpen-commands'."
          (default-handler
            (lambda ()
              (unless (use-region-p) (mark-paragraph))
-             (if (string= "\n" (thing-at-point 'line t))
-                 (forward-char))
+             (let ((text (thing-at-point 'line)))
+               (set-text-properties 0 (length text) nil text)
+               (if (string= "\n" text)
+                   (forward-char)))
              (buffer-substring-no-properties (region-beginning) (region-end))))
          (string (save-excursion
                    (funcall (or handler default-handler))))
@@ -221,8 +223,10 @@ if FLAG is not nil, use second command in `redpen-commands'."
             (save-excursion
               (unless (use-region-p) (mark-paragraph))
               (goto-char (region-beginning))
-              (if (string= "\n" (thing-at-point 'line t))
-                  (forward-char))
+              (let ((text (thing-at-point 'line)))
+                (set-text-properties 0 (length text) nil text)
+                (if (string= "\n" text)
+                    (forward-char)))
               (cons (1- (line-number-at-pos))
                     (current-column)))))
     (with-current-buffer
