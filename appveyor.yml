@@ -4,7 +4,7 @@ before_build:
   - emacs --version
   - git clone https://github.com/cask/cask.git "%USERPROFILE%\.cask"
   - SET PATH=%USERPROFILE%\.cask\bin;%PATH%
-  - %USERPROFILE%\.cask\bin\cask install
+  - cask install
 build: off
 test_script:
   - SET PATH=%USERPROFILE%\.cask\bin;%PATH%
