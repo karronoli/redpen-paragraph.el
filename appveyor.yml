@@ -3,9 +3,11 @@ install:
 before_build:
   - emacs --version
   - git clone https://github.com/cask/cask.git "%USERPROFILE%\.cask"
-  - "%USERPROFILE%\.cask\bin\cask" install
+  - SET PATH=%USERPROFILE%\.cask\bin;%PATH%
+  - %USERPROFILE%\.cask\bin\cask install
 build: off
 test_script:
-  - "%USERPROFILE%\.cask\bin\cask" exec ert-runner
+  - SET PATH=%USERPROFILE%\.cask\bin;%PATH%
+  - cask exec ert-runner
 artifacts:
   - path: redpen-paragraph.el
