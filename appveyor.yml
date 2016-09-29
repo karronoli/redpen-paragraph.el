@@ -5,6 +5,7 @@ before_build:
   - git clone https://github.com/cask/cask.git "%USERPROFILE%\.cask"
   - SET PATH=%USERPROFILE%\.cask\bin;%PATH%
   - cask install
+build: off
 test_script:
   - cask exec ert-runner
 artifacts:
