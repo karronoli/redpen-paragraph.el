@@ -7,6 +7,6 @@ before_test:
   - cask install
 build: off
 test_script:
-  - for /f %%i in ('dir /a-d /s /b ert-runner') do emacs --script "%%i"
+  - for /f %%i in ('dir /a-d /s /b ert-runner.el') do emacs --script "%%i"
 artifacts:
   - path: redpen-paragraph.el
