@@ -1,0 +1,73 @@
+#+TITLE: Emacs Lisp と Travis CI （2016年5月版）
+#+AUTHOR: karronoli
+#+KEYWORDS: Emacs, elisp, Travis CI, Cask, Ert-runner, undercover
+#+DESCRIPTION: Emacs Lisp を Travis CI でテストする （2016年5月版）
+#+LANGUAGE: ja
+
+* Emacs Lisp の Travis CI 事情
+Emacs Lisp のパッケージをテストするには最低限どんなツールを使うか？
+CI サービスに依存しない周辺ツールについて知ることができた．
+今回の成果はもちろんこれに集約される．
+[[https://github.com/karronoli/redpen-paragraph.el]]
+
+
+以前の Travis CI では「language: emacs-lisp」という設定で
+elisp をサポートしていたらしい．
+現在はそのようなサポートはなく sudo も使わずにテストを実行する
+のが実行速度の点で望ましいらしい．
+ただし現状の Travis CI と elisp でのカバレッジ計測まで含めた
+ユニットテストの実行方法についてまとまった情報は見つけられなかった．
+なので elisp でパッケージを作ってる人には役に立つんじゃないかと思う．
+
+
+* 準備
+まずは ERT でユニットテストを書く．話はそれから．
+
+** 使いたいEmacsのバージョンを決める
+Travis CI をコンテナベースで使う際には sudo が使えないので
+パッケージマネージャ経由で使えるEmacsの種類には制限がある．
+使えるのはemacs23とemacs24でemacs-snapshotは使えない．
+[[https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-precise]]
+もちろん emacs-snapshot に関して PR はとっくに出ている．
+しかも複数のPRが出ている．
+その結果コンフリクト，そして今に至るまで放置されているようだ．
+
+** .travis.yml
+これはどのプロジェクトにも使い回せると思う．
+
+[[https://github.com/karronoli/redpen-paragraph.el/blob/231374deb1013ece803455444b72e0a8cf9b43a1/.travis.yml]]
+#+INCLUDE: ".travis.yml" src fundamental
+
+テストを実行するだけなら ert-run-tests-batch-and-exit を
+直接使えばいい．
+でもカバレッジの計測をするには Ert-runner を経由する必要があるらしい．
+カバレッジの計測には undercover というのを使う．
+それらを使えるようにするために cask コマンドを使えるようにする．
+
+** Cask
+package-file を希望のファイル名に変更．
+適宜依存関係を設定すれば使える．
+[[https://github.com/karronoli/redpen-paragraph.el/blob/231374deb1013ece803455444b72e0a8cf9b43a1/Cask]]
+#+INCLUDE: "Cask" src fundamental
+
+** test/test-helper.el
+undercover 関数に渡すファイル名は要変更．
+[[https://github.com/karronoli/redpen-paragraph.el/blob/231374deb1013ece803455444b72e0a8cf9b43a1/test/test-helper.el]]
+#+INCLUDE: "test-helper.el" src emacs-lisp
+
+** .ert-runner
+カレントディレクトリは明示的に追加する必要がある．
+[[https://github.com/karronoli/redpen-paragraph.el/blob/231374deb1013ece803455444b72e0a8cf9b43a1/.ert-runner]]
+#+INCLUDE: ".ert-runner" src fundamental
+
+
+* 結果
+カバレッジ計測の結果は coveralls を使った，というより
+undercover.el には /tmp 辺りに書き出す機能はあるんだけど
+なぜかローカルでは確認できていない．
+[[https://travis-ci.org/karronoli/redpen-paragraph.el/]]
+[[https://coveralls.io/github/karronoli/redpen-paragraph.el]]
+
+初めはテストが実行できるだけの状態だったものが Cask を使った
+パッケージの依存関係の記述と（C1っぽい）カバレッジの計測ができるように
+なった．良かった良かった．
