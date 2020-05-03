@@ -1,0 +1,79 @@
+#+TITLE: Emacs Lisp & Travis CI (ver. 2016.5)
+#+AUTHOR: karronoli
+#+KEYWORDS: Emacs, elisp, Travis CI, Cask, Ert-runner, undercover
+#+DESCRIPTION: Test Emacs Lisp by Travis CI (ver. 2016.5)
+#+LANGUAGE: en
+
+* Travis CI circumstance of Emacs Lisp
+What do you know a little about testing the package of Emacs Lisp?
+I've learn about some tool which does not depend on the CI service.
+Of course, this achievement has been aggregated into this.
+[[https://github.com/karronoli/redpen-paragraph.el]]
+
+
+Travis CI used to support elisp by the setting of "language: emacs-lisp".
+ Currently, there is no such support and
+using "sudo" is not preferable in terms of execution speed.
+ However, I couldn't find a article of the
+the current situation of Travis CI &
+how to run the unit tests of elisp including up
+to coverage measurement.
+I think that this article helps the people who are making a package in elisp.
+
+
+* Prepare
+First, write a unit test by ERT.
+
+** Decide to using Emacs version
+If you want to using Travis CI in the container-based,
+ you can't use "sudo".
+Therefore, there is a practical limit to the version of Emacs.
+emacs23 & emacs24 are available, but emacs-snapshot is not available.
+[[https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-precise]]
+Some PRs have come a long time ago about emacs-snapshot.
+As a result it is conflicts, and it seems to have been left until now.
+
+** .travis.yml
+I think that this can be used for any project.
+
+[[https://github.com/karronoli/redpen-paragraph.el/blob/231374deb1013ece803455444b72e0a8cf9b43a1/.travis.yml]]
+#+INCLUDE: ".travis.yml" src fundamental
+
+Execute "ert-run-tests-batch-and-exit" to only run tests on your terminal.
+I hear that the tests with coverage measurement need to use "Ert-runner".
+"undercover" of elisp package does a coverage measurement.
+You should to use "cask" command to use them all.
+
+** Cask
+Change a filename passed to "package-file".
+And it can be used by setting the appropriate dependency.
+
+[[https://github.com/karronoli/redpen-paragraph.el/blob/231374deb1013ece803455444b72e0a8cf9b43a1/Cask]]
+#+INCLUDE: "Cask" src fundamental
+
+** test/test-helper.el
+Change a filename passed to "undercover".
+
+[[https://github.com/karronoli/redpen-paragraph.el/blob/231374deb1013ece803455444b72e0a8cf9b43a1/test/test-helper.el]]
+#+INCLUDE: "test-helper.el" src emacs-lisp
+
+** .ert-runner
+Add a path to current directory explicitly.
+
+https://github.com/karronoli/redpen-paragraph.el/blob/231374deb1013ece803455444b72e0a8cf9b43a1/.ert-runner]]
+#+INCLUDE: ".ert-runner" src fundamental
+
+
+* Conclusion
+I've used coveralls service to view the coverage measurement.
+I mean, I do not know why the result is not be confirmed locally.
+"undercover" has a function to write the result to /tmp.
+But I couldn't find it.
+
+[[https://travis-ci.org/karronoli/redpen-paragraph.el/]]
+[[https://coveralls.io/github/karronoli/redpen-paragraph.el]]
+This package has been changed
+ to with C1-like coverage measurement,
+ from without it, and the dependency has been managed by Cask.
+ the dependency package.
+It's a happy ending.
